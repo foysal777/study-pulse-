@@ -12,3 +12,120 @@
         </div>
     {% endif %}
 {% endblock %}
+
+{% block result_list %}
+    <style>
+        .teacher-actions-cell {
+            position: relative;
+        }
+        
+        .teacher-action-button {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #fff;
+            font-size: 20px;
+            transition: all 0.2s;
+        }
+        
+        .teacher-action-button:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+        
+        .teacher-action-menu {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            min-width: 150px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,.12);
+            padding: 8px;
+        }
+        
+        .teacher-action-menu a {
+            display: block;
+            padding: 8px 10px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .teacher-action-menu a:hover {
+            background: #f3f4f6;
+        }
+        
+        .edit-action {
+            color: #0066cc;
+        }
+        
+        .delete-action {
+            color: #dc2626;
+        }
+    </style>
+    
+    {{ block.super }}
+    
+    <script>
+        (function() {
+            if (window.teacherMenuBound) {
+                return;
+            }
+            window.teacherMenuBound = true;
+            window.activeTeacherMenu = null;
+
+            window.closeTeacherMenu = function() {
+                if (!window.activeTeacherMenu) {
+                    return;
+                }
+                window.activeTeacherMenu.style.display = "none";
+                window.activeTeacherMenu = null;
+            };
+
+            window.toggleTeacherMenu = function(event, buttonId, menuId) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const button = document.getElementById(buttonId);
+                const menu = document.getElementById(menuId);
+                if (!button || !menu) {
+                    return;
+                }
+
+                const isOpen = menu.style.display === "block";
+                window.closeTeacherMenu();
+
+                if (isOpen) {
+                    return;
+                }
+
+                const rect = button.getBoundingClientRect();
+                menu.style.display = "block";
+                menu.style.top = (rect.bottom + 6) + "px";
+                menu.style.left = Math.max(8, rect.right - menu.offsetWidth) + "px";
+                window.activeTeacherMenu = menu;
+            };
+
+            document.addEventListener("click", function(event) {
+                if (!window.activeTeacherMenu) {
+                    return;
+                }
+                if (window.activeTeacherMenu.contains(event.target)) {
+                    return;
+                }
+                window.closeTeacherMenu();
+            });
+
+            window.addEventListener("scroll", window.closeTeacherMenu, true);
+            window.addEventListener("resize", window.closeTeacherMenu);
+        })();
+    </script>
+{% endblock %}

@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.db import transaction
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
@@ -11,6 +12,9 @@ from accounts.models import OneTimePassword, OtpPurpose, UserRole
 from accounts.serializers import (
     OtpVerificationSerializer,
     ErrorResponseSerializer,
+    ForgotPasswordRequestOtpSerializer,
+    ForgotPasswordResetSerializer,
+    ForgotPasswordVerifyOtpSerializer,
     ResendOtpSerializer,
     SignInSerializer,
     SignInSuccessResponseSerializer,
@@ -31,6 +35,10 @@ User = get_user_model()
 
 def _get_user_by_email(email):
     return User.objects.filter(email=email.lower()).first()
+
+
+def _forgot_password_verified_cache_key(email):
+    return f"accounts:forgot-password:verified:{email.lower()}"
 
 
 def _build_tokens_for_user(user):
@@ -269,3 +277,104 @@ def refresh_token(request):
 @permission_classes([IsAuthenticated])
 def me(request):
     return success_response(UserSerializer(request.user).data, message="User profile fetched successfully.")
+
+
+@extend_schema(
+    tags=["Accounts Authentication"],
+    operation_id="accounts_forgot_password_request_otp",
+    request=ForgotPasswordRequestOtpSerializer,
+    responses={
+        200: SuccessMessageResponseSerializer,
+        400: OpenApiResponse(response=ErrorResponseSerializer, description="Validation error."),
+        404: OpenApiResponse(response=ErrorResponseSerializer, description="User not found."),
+        500: OpenApiResponse(response=ErrorResponseSerializer, description="OTP email sending failed."),
+    },
+    description="Send a 4 digit OTP to the user's email for forgot-password flow.",
+)
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def forgot_password_request_otp(request):
+    serializer = ForgotPasswordRequestOtpSerializer(data=request.data)
+    if not serializer.is_valid():
+        return error_response("Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    user = _get_user_by_email(serializer.validated_data["email"])
+    if user is None:
+        return error_response("User not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+    cache.delete(_forgot_password_verified_cache_key(user.email))
+
+    try:
+        issue_and_send_otp(user, OtpPurpose.FORGOT_PASSWORD)
+    except Exception as exc:
+        return error_response("Failed to send OTP email.", {"detail": str(exc)}, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    return success_response(message="OTP sent successfully.")
+
+
+@extend_schema(
+    tags=["Accounts Authentication"],
+    operation_id="accounts_forgot_password_verify_otp",
+    request=ForgotPasswordVerifyOtpSerializer,
+    responses={
+        200: SuccessMessageResponseSerializer,
+        400: OpenApiResponse(response=ErrorResponseSerializer, description="Validation error or OTP invalid/expired."),
+        404: OpenApiResponse(response=ErrorResponseSerializer, description="User not found."),
+    },
+    description="Verify forgot-password OTP before setting a new password.",
+)
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def forgot_password_verify_otp(request):
+    serializer = ForgotPasswordVerifyOtpSerializer(data=request.data)
+    if not serializer.is_valid():
+        return error_response("Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    user = _get_user_by_email(serializer.validated_data["email"])
+    if user is None:
+        return error_response("User not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+    otp = _get_valid_otp(user, OtpPurpose.FORGOT_PASSWORD, serializer.validated_data["otp"])
+    if otp is None:
+        return error_response("Invalid or expired OTP.", status_code=status.HTTP_400_BAD_REQUEST)
+
+    otp.mark_used()
+    cache.set(_forgot_password_verified_cache_key(user.email), True, timeout=600)
+
+    return success_response(message="OTP verified successfully.")
+
+
+@extend_schema(
+    tags=["Accounts Authentication"],
+    operation_id="accounts_forgot_password_reset",
+    request=ForgotPasswordResetSerializer,
+    responses={
+        200: SuccessMessageResponseSerializer,
+        400: OpenApiResponse(response=ErrorResponseSerializer, description="Validation error or OTP invalid/expired."),
+        404: OpenApiResponse(response=ErrorResponseSerializer, description="User not found."),
+    },
+    description="Set a new password using email and matching confirm password after OTP has already been verified.",
+)
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def forgot_password_reset(request):
+    serializer = ForgotPasswordResetSerializer(data=request.data)
+    if not serializer.is_valid():
+        return error_response("Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    user = _get_user_by_email(serializer.validated_data["email"])
+    if user is None:
+        return error_response("User not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+    if not cache.get(_forgot_password_verified_cache_key(user.email)):
+        return error_response(
+            "OTP verification required before resetting password.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    with transaction.atomic():
+        user.set_password(serializer.validated_data["new_password"])
+        user.save(update_fields=["password", "updated_at"])
+        cache.delete(_forgot_password_verified_cache_key(user.email))
+
+    return success_response(message="Password reset successfully.")

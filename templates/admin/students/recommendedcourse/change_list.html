@@ -1,0 +1,12 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls unfold %}
+
+{% block object-tools %}
+    <div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-bottom: 20px;">
+        {% url opts|admin_urlname:'add' as add_url %}
+        <a href="{{ add_url }}" style="padding: 10px 16px; background-color: #a855f7; color: white; font-size: 14px; font-weight: 500; border-radius: 8px; text-decoration: none; display: inline-block; transition: background-color 0.2s;">
+            + Add Recommended courses
+        </a>
+        {{ block.super }}
+    </div>
+{% endblock %}

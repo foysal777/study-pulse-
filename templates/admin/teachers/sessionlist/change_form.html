@@ -11,16 +11,6 @@
                 {% trans "Cancel" %}
             {% endcomponent %}
 
-            {% if show_save_and_continue %}
-                {% component "unfold/components/button.html" with submit=1 form=opts.model_name|add:"_form" name="_continue" variant="default" size="sm" class="!w-auto !min-w-0 shrink-0 px-3 py-1.5 text-sm" %}
-                    {% if can_change %}
-                        {% trans "Save and continue editing" %}
-                    {% else %}
-                        {% trans "Save and view" %}
-                    {% endif %}
-                {% endcomponent %}
-            {% endif %}
-
             {% component "unfold/components/button.html" with submit=1 form=opts.model_name|add:"_form" name="_save" size="sm" class="!w-auto !min-w-0 shrink-0 px-3 py-1.5 text-sm" %}
                 {% trans "Save" %}
             {% endcomponent %}

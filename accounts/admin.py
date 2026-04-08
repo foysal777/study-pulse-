@@ -20,6 +20,7 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
     model = User
     ordering = ("id",)
     list_display = ("id", "full_name", "email", "role", "is_active", "is_email_verified", "is_staff")
+    readonly_fields=("is_active", "is_staff", "is_email_verified")
     list_filter = ("role", "is_active", "is_email_verified", "is_staff", "is_superuser")
     search_fields = ("full_name", "email")
 
@@ -41,9 +42,11 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
     )
 
 
-@admin.register(Group)
-class GroupAdmin(BaseGroupAdmin, ModelAdmin):
-    pass
+
+
+# @admin.register(Group)
+# class GroupAdmin(BaseGroupAdmin, ModelAdmin):
+#     pass
 
 
 @admin.register(OneTimePassword)

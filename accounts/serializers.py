@@ -112,3 +112,37 @@ class ErrorResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField(default=False)
     message = serializers.CharField()
     errors = serializers.JSONField(required=False)
+
+
+class ForgotPasswordRequestOtpSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        return value.lower()
+
+
+class ForgotPasswordVerifyOtpSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(min_length=4, max_length=4)
+
+    def validate_email(self, value):
+        return value.lower()
+
+    def validate_otp(self, value):
+        if not value.isdigit():
+            raise serializers.ValidationError("OTP must be a 4 digit number.")
+        return value
+
+
+class ForgotPasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    new_password = serializers.CharField(write_only=True, min_length=8)
+    confirm_password = serializers.CharField(write_only=True, min_length=8)
+
+    def validate_email(self, value):
+        return value.lower()
+
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError({"confirm_password": "Confirm password does not match new password."})
+        return attrs

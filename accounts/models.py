@@ -16,6 +16,7 @@ class UserRole(models.TextChoices):
 class OtpPurpose(models.TextChoices):
     SIGNUP = "signup", "Sign Up"
     LOGIN = "login", "Sign In"
+    FORGOT_PASSWORD = "forgot_password", "Forgot Password"
 
 
 class UserManager(BaseUserManager):

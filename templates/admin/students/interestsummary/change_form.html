@@ -2,7 +2,7 @@
 {% load i18n admin_urls unfold %}
 
 {% block after_field_sets %}
-    <div class="border-t border-base-200 dark:border-base-800 pt-3">
+    <div class="pt-2">
         <div class="flex flex-wrap items-center justify-start gap-2">
             {% url opts|admin_urlname:'changelist' as changelist_url %}
             {% add_preserved_filters changelist_url as cancel_url %}
@@ -10,16 +10,6 @@
             {% component "unfold/components/button.html" with href=cancel_url variant="default" size="sm" class="!w-auto !min-w-0 shrink-0 px-3 py-1.5 text-sm" %}
                 {% trans "Cancel" %}
             {% endcomponent %}
-
-            {% if show_save_and_continue %}
-                {% component "unfold/components/button.html" with submit=1 form=opts.model_name|add:"_form" name="_continue" variant="default" size="sm" class="!w-auto !min-w-0 shrink-0 px-3 py-1.5 text-sm" %}
-                    {% if can_change %}
-                        {% trans "Save and continue editing" %}
-                    {% else %}
-                        {% trans "Save and view" %}
-                    {% endif %}
-                {% endcomponent %}
-            {% endif %}
 
             {% component "unfold/components/button.html" with submit=1 form=opts.model_name|add:"_form" name="_save" size="sm" class="!w-auto !min-w-0 shrink-0 px-3 py-1.5 text-sm" %}
                 {% trans "Save" %}

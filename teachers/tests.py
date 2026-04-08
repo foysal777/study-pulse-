@@ -18,7 +18,7 @@ class TeacherModelTests(TestCase):
             name="Anna Teacher",
             email="anna@example.com",
         )
-        teacher.levels.add(self.beginner)
+        teacher.capability_level.add(self.beginner)
 
         teacher.email = "updated@example.com"
 
@@ -31,6 +31,6 @@ class TeacherModelTests(TestCase):
             email="multi@example.com",
         )
 
-        teacher.levels.add(self.beginner, self.expert)
+        teacher.capability_level.add(self.beginner, self.expert)
 
-        self.assertEqual(teacher.levels.count(), 2)
+        self.assertEqual(teacher.capability_level.count(), 2)

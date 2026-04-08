@@ -1,0 +1,133 @@
+{% with dropdown_id=widget.attrs.id|default:widget.name %}
+<details class="relative block w-full max-w-2xl" data-capability-dropdown id="{{ dropdown_id }}-dropdown">
+    <summary class="list-none flex min-h-[38px] w-full cursor-pointer items-center justify-between gap-3 rounded-default border border-base-200 bg-white px-3 py-2 text-sm shadow-xs dark:border-base-700 dark:bg-base-900">
+        <span class="truncate" data-dropdown-label>Select capability level</span>
+        <span class="shrink-0 text-base-400">▾</span>
+    </summary>
+
+    <div class="absolute left-0 top-full z-50 mt-1 w-full min-w-full overflow-hidden rounded-default border border-base-200 bg-white shadow-lg dark:border-base-700 dark:bg-base-900">
+        <div class="border-b border-base-200 p-2 dark:border-base-700">
+            <input
+                type="text"
+                placeholder="Search"
+                class="block w-full rounded-default border border-base-200 bg-white px-3 py-2 text-sm dark:border-base-700 dark:bg-base-900"
+                data-dropdown-search
+            >
+        </div>
+
+        <div class="max-h-64 overflow-y-auto p-2">
+            {% for group, options, index in widget.optgroups %}
+                {% for option in options %}
+                    <label class="flex w-full cursor-pointer items-center gap-2 rounded-default px-2 py-1.5 text-sm hover:bg-base-100 dark:hover:bg-base-800" data-dropdown-option>
+                        <input
+                            type="checkbox"
+                            name="{{ option.name }}"
+                            value="{{ option.value|stringformat:'s' }}"
+                            {% if option.value != None and option.selected %}checked{% endif %}
+                            {% if option.attrs.id %}id="{{ option.attrs.id }}"{% endif %}
+                            class="h-4 w-4 shrink-0 rounded border border-base-300 text-primary-600"
+                        >
+                        <span class="block flex-1 whitespace-nowrap" data-option-label>{{ option.label }}</span>
+                    </label>
+                {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+</details>
+<div class="mt-2 hidden rounded-default border border-base-200 bg-base-50 p-2 text-sm dark:border-base-700 dark:bg-base-900/30" data-selected-container>
+    <p class="mb-1 text-xs font-medium uppercase tracking-wide text-base-500">Selected capability levels</p>
+    <ul class="space-y-1" data-selected-list></ul>
+</div>
+
+<script>
+(function() {
+    const dropdown = document.getElementById("{{ dropdown_id }}-dropdown");
+    if (!dropdown || dropdown.dataset.bound === "1") {
+        return;
+    }
+
+    dropdown.dataset.bound = "1";
+
+    const label = dropdown.querySelector("[data-dropdown-label]");
+    const search = dropdown.querySelector("[data-dropdown-search]");
+    const options = Array.from(dropdown.querySelectorAll("[data-dropdown-option]"));
+    const checkboxes = Array.from(dropdown.querySelectorAll('input[type="checkbox"]'));
+    const selectedContainer = dropdown.nextElementSibling && dropdown.nextElementSibling.hasAttribute("data-selected-container")
+        ? dropdown.nextElementSibling
+        : null;
+    const selectedList = selectedContainer ? selectedContainer.querySelector("[data-selected-list]") : null;
+
+    function updateLabel() {
+        const checkedCount = checkboxes.filter((checkbox) => checkbox.checked).length;
+        label.textContent = checkedCount ? `${checkedCount} selected` : "Select capability level";
+    }
+
+    function renderSelectedItems() {
+        if (!selectedContainer || !selectedList) {
+            return;
+        }
+
+        const selectedLabels = checkboxes
+            .filter((checkbox) => checkbox.checked)
+            .map((checkbox) => {
+                const optionLabel = checkbox.closest("[data-dropdown-option]")?.querySelector("[data-option-label]");
+                return optionLabel ? optionLabel.textContent.trim() : "";
+            })
+            .filter(Boolean);
+
+        selectedList.innerHTML = "";
+        if (!selectedLabels.length) {
+            selectedContainer.classList.add("hidden");
+            return;
+        }
+
+        selectedContainer.classList.remove("hidden");
+        selectedLabels.forEach((itemText) => {
+            const item = document.createElement("li");
+            item.className = "text-sm text-base-700 dark:text-base-200";
+            item.textContent = `• ${itemText}`;
+            selectedList.appendChild(item);
+        });
+    }
+
+    function filterOptions() {
+        const query = search.value.trim().toLowerCase();
+        options.forEach((option) => {
+            const text = option.querySelector("[data-option-label]").textContent.toLowerCase();
+            option.style.display = text.includes(query) ? "flex" : "none";
+        });
+    }
+
+    checkboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", function() {
+            updateLabel();
+            renderSelectedItems();
+        });
+    });
+
+    search.addEventListener("input", filterOptions);
+
+    dropdown.addEventListener("toggle", function() {
+        if (dropdown.open) {
+            search.focus();
+        } else {
+            search.value = "";
+            filterOptions();
+        }
+    });
+
+    document.addEventListener("click", function(event) {
+        if (!dropdown.open) {
+            return;
+        }
+
+        if (!dropdown.contains(event.target)) {
+            dropdown.open = false;
+        }
+    });
+
+    updateLabel();
+    renderSelectedItems();
+})();
+</script>
+{% endwith %}
