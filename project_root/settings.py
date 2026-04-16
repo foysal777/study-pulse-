@@ -58,6 +58,9 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "Study Pulse API",
     "DESCRIPTION": "API documentation",
     "VERSION": "1.0.0",
+    "SWAGGER_UI_SETTINGS": {
+        "persistAuthorization": True,
+    },
 }
 
 

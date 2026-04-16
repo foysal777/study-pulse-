@@ -6,12 +6,16 @@ from rest_framework.permissions import IsAuthenticated
 
 from accounts.models import UserRole
 from common.responses import error_response, success_response
-from students.models import Intterest, StudentProfile
+from students.models import Intterest, StudentProfile, AssessmentTemplate
 from students.serializers import (
     StudentErrorResponseSerializer,
     StudentInterestOptionsSuccessResponseSerializer,
     StudentProfileSetupSuccessResponseSerializer,
     StudentProfileSetupUpsertSerializer,
+    AssessmentTemplateDisplaySerializer,
+    AssessmentTemplateListSerializer,
+    AssessmentTemplateSuccessResponseSerializer,
+    AssessmentTemplateListSuccessResponseSerializer
 )
 
 
@@ -175,3 +179,51 @@ def profile_setup(request):
         _build_profile_setup_payload(request.user, profile),
         message="Profile setup updated successfully.",
     )
+
+
+@extend_schema(
+    tags=["Students Assessment"],
+    operation_id="students_assessment_levels",
+    responses={
+        200: AssessmentTemplateListSuccessResponseSerializer,
+    },
+    description="Get list of all available assessment levels.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def assessment_levels(request):
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Only student users can access this endpoint.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+    templates = AssessmentTemplate.objects.filter(is_active=True).order_by("created_at")
+    serializer = AssessmentTemplateListSerializer(templates, many=True)
+    return success_response(serializer.data, message="Assessment levels fetched successfully.")
+
+
+@extend_schema(
+    tags=["Students Assessment"],
+    operation_id="students_assessment_detail",
+    responses={
+        200: AssessmentTemplateSuccessResponseSerializer,
+        404: OpenApiResponse(description="Assessment level not found."),
+    },
+    description="Get detailed questions and sections for a specific level.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def assessment_detail(request, template_id):
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Only student users can access this endpoint.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+    
+    try:
+        template = AssessmentTemplate.objects.get(id=template_id, is_active=True)
+    except AssessmentTemplate.DoesNotExist:
+        return error_response("Assessment level not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+    serializer = AssessmentTemplateDisplaySerializer(template)
+    return success_response(serializer.data, message="Assessment questions fetched successfully.")

@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from students.models import AssessmentTemplate, AssessmentSection, AssessmentQuestion, AssessmentOption
+
 
 class StudentProfileSetupUpsertSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255, required=False)
@@ -89,3 +91,51 @@ class StudentInterestOptionsSuccessResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField(default=True)
     message = serializers.CharField()
     data = StudentInterestOptionsDataSerializer()
+
+
+class AssessmentOptionDisplaySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssessmentOption
+        fields = ["id", "text", "order"]
+
+
+class AssessmentQuestionDisplaySerializer(serializers.ModelSerializer):
+    options = AssessmentOptionDisplaySerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = AssessmentQuestion
+        fields = ["id", "question_type", "prompt", "audio_file", "max_listens", "transcript", "difficulty", "marks", "options"]
+
+
+class AssessmentSectionDisplaySerializer(serializers.ModelSerializer):
+    questions = AssessmentQuestionDisplaySerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = AssessmentSection
+        fields = ["id", "title", "skill", "instructions", "weight", "questions"]
+
+
+class AssessmentTemplateDisplaySerializer(serializers.ModelSerializer):
+    sections = AssessmentSectionDisplaySerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = AssessmentTemplate
+        fields = ["id", "name", "version", "pass_percentage", "sections"]
+
+
+class AssessmentTemplateListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssessmentTemplate
+        fields = ["id", "name", "version", "pass_percentage"]
+
+
+class AssessmentTemplateSuccessResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(default=True)
+    message = serializers.CharField()
+    data = AssessmentTemplateDisplaySerializer()
+
+
+class AssessmentTemplateListSuccessResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(default=True)
+    message = serializers.CharField()
+    data = AssessmentTemplateListSerializer(many=True)

@@ -371,7 +371,7 @@ class StudentProfileAdmin(PlaceholderAdminMixin, ModelAdmin):
 class AssessmentSectionInline(admin.TabularInline):
     model = AssessmentSection
     extra = 0
-    fields = ("order", "title", "skill", "section_time_minutes", "weight")
+    fields = ("order", "title", "skill", "weight")
 
 
 class AssessmentLevelBandInline(admin.TabularInline):
@@ -382,7 +382,7 @@ class AssessmentLevelBandInline(admin.TabularInline):
 
 @admin.register(AssessmentTemplate)
 class AssessmentTemplateAdmin(PlaceholderAdminMixin, ModelAdmin):
-    list_display = ("id", "name", "version", "duration_minutes", "is_active", "created_at")
+    list_display = ("id", "name", "version", "pass_percentage", "is_active", "created_at")
     list_filter = ("is_active",)
     search_fields = ("name",)
     inlines = (AssessmentSectionInline, AssessmentLevelBandInline)
@@ -436,6 +436,7 @@ class AssessmentQuestionAdmin(PlaceholderAdminMixin, ModelAdmin):
                     "prompt",
                     "prompt_i18n",
                     "audio_file",
+                    "max_listens",
                     "transcript",
                 ),
             },
@@ -460,6 +461,7 @@ class StudentAssessmentAnswerInline(admin.TabularInline):
         "is_correct",
         "auto_score",
         "teacher_score",
+        "listen_count",
     )
     readonly_fields = ("question", "selected_option", "text_answer", "auto_score")
     autocomplete_fields = ("question", "selected_option")
@@ -474,12 +476,15 @@ class StudentAssessmentAttemptAdmin(PlaceholderAdminMixin, ModelAdmin):
         "template",
         "status",
         "total_score",
+        "is_passed",
         "reading_score",
         "listening_score",
         "writing_score",
+        "grammar_score",
+        "vocabulary_score",
         "started_at",
     )
-    list_filter = ("status", "template", "started_at")
+    list_filter = ("status", "is_passed", "template", "started_at")
     search_fields = ("student__full_name", "student__email", "template__name")
     autocomplete_fields = ("student", "template")
     readonly_fields = ("started_at",)
@@ -496,6 +501,7 @@ class StudentAssessmentAnswerAdmin(PlaceholderAdminMixin, ModelAdmin):
         "is_correct",
         "auto_score",
         "teacher_score",
+        "listen_count",
         "evaluated_at",
     )
     list_filter = ("is_correct", "question__question_type", "question__section__skill")

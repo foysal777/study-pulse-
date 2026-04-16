@@ -161,13 +161,14 @@ class AssessmentSkill(models.TextChoices):
     READING = "reading", "Reading"
     LISTENING = "listening", "Listening"
     WRITING = "writing", "Writing"
+    GRAMMAR = "grammar", "Grammar"
+    VOCABULARY = "vocabulary", "Vocabulary"
 
 
 class AssessmentQuestionType(models.TextChoices):
     MCQ = "mcq", "MCQ"
-    TRUE_FALSE = "true_false", "True / False"
-    SHORT = "short", "Short Answer"
-    WRITING = "writing", "Writing"
+    PASSAGE = "passage", "Passage"
+    AUDIO = "audio", "Audio"
 
 
 class AssessmentDifficulty(models.TextChoices):
@@ -183,16 +184,17 @@ class AssessmentAttemptStatus(models.TextChoices):
 
 
 class AssessmentMappedLevel(models.TextChoices):
-    BEGINNER = "beginner", "Beginner"
-    INTERMEDIATE = "intermediate", "Intermediate"
-    EXPERT = "expert", "Expert"
+    ELEMENTARY_A1 = "elementary_a1", "Elementary (A1)"
+    PRE_INTERMEDIATE_A2 = "pre_intermediate_a2", "Pre-Intermediate (A2)"
+    INTERMEDIATE_B1 = "intermediate_b1", "Intermediate (B1)"
+    UPPER_INTERMEDIATE_B2 = "upper_intermediate_b2", "Upper-Intermediate (B2)"
 
 
 class AssessmentTemplate(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     version = models.PositiveIntegerField(default=1)
-    duration_minutes = models.PositiveIntegerField(null=True, blank=True)
+    pass_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=70.0, help_text="Passing cutoff percentage")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -215,7 +217,6 @@ class AssessmentSection(models.Model):
     skill = models.CharField(max_length=20, choices=AssessmentSkill.choices)
     instructions = models.TextField(blank=True)
     order = models.PositiveIntegerField(default=1)
-    section_time_minutes = models.PositiveIntegerField(null=True, blank=True)
     weight = models.DecimalField(max_digits=5, decimal_places=2, default=1)
 
     class Meta:
@@ -236,6 +237,7 @@ class AssessmentQuestion(models.Model):
     prompt = models.TextField()
     prompt_i18n = models.JSONField(default=dict, blank=True)
     audio_file = models.FileField(upload_to="assessment_audio/", blank=True, null=True)
+    max_listens = models.PositiveIntegerField(default=2, blank=True, null=True, help_text="Maximum number of times the audio can be played")
     transcript = models.TextField(blank=True)
     marks = models.DecimalField(max_digits=6, decimal_places=2, default=1)
     difficulty = models.CharField(max_length=20, choices=AssessmentDifficulty.choices, default=AssessmentDifficulty.MEDIUM)
@@ -290,9 +292,12 @@ class StudentAssessmentAttempt(models.Model):
     submitted_at = models.DateTimeField(null=True, blank=True)
     evaluated_at = models.DateTimeField(null=True, blank=True)
     total_score = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    is_passed = models.BooleanField(null=True, blank=True)
     reading_score = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     listening_score = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     writing_score = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    grammar_score = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    vocabulary_score = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
 
     class Meta:
         ordering = ["-started_at"]
@@ -323,6 +328,7 @@ class StudentAssessmentAnswer(models.Model):
     is_correct = models.BooleanField(null=True, blank=True)
     auto_score = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     teacher_score = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    listen_count = models.PositiveIntegerField(default=0, help_text="Number of times audio was played")
     feedback = models.TextField(blank=True)
     evaluated_at = models.DateTimeField(null=True, blank=True)
 
@@ -340,7 +346,7 @@ class AssessmentLevelBand(models.Model):
         on_delete=models.CASCADE,
         related_name="level_bands",
     )
-    label = models.CharField(max_length=20, choices=AssessmentMappedLevel.choices)
+    label = models.CharField(max_length=50, choices=AssessmentMappedLevel.choices)
     min_score = models.DecimalField(max_digits=8, decimal_places=2)
     max_score = models.DecimalField(max_digits=8, decimal_places=2)
     order = models.PositiveIntegerField(default=1)

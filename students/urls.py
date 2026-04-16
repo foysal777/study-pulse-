@@ -6,4 +6,6 @@ app_name = "students"
 urlpatterns = [
     path("profile-setup/", views.profile_setup, name="profile_setup"),
     path("interests/", views.interest_options, name="interest_options"),
+    path("assessments/levels/", views.assessment_levels, name="assessment_levels"),
+    path("assessments/levels/<int:template_id>/", views.assessment_detail, name="assessment_detail"),
 ]

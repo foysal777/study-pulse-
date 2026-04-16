@@ -1,0 +1,1311 @@
+{
+  "template_name": "Elementary (A1)",
+  "pass_percentage": 70.0,
+  "sections": [
+    {
+      "skill": "grammar",
+      "title": "Grammar Section",
+      "questions": [
+        {
+          "prompt": "Tim and Sue ____ teachers.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "are",
+              "is_correct": true
+            },
+            {
+              "text": "is",
+              "is_correct": false
+            },
+            {
+              "text": "isn’t",
+              "is_correct": false
+            },
+            {
+              "text": "aren’t",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "She's from Dublin. She ____ Irish.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "is from",
+              "is_correct": false
+            },
+            {
+              "text": "is",
+              "is_correct": true
+            },
+            {
+              "text": "isn’t",
+              "is_correct": false
+            },
+            {
+              "text": "are from",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "They ____ Welsh. They’re from Scotland.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "aren’t",
+              "is_correct": true
+            },
+            {
+              "text": "is",
+              "is_correct": false
+            },
+            {
+              "text": "isn’t",
+              "is_correct": false
+            },
+            {
+              "text": "are",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "Those are your books and ____ are mine.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "these",
+              "is_correct": true
+            },
+            {
+              "text": "this",
+              "is_correct": false
+            },
+            {
+              "text": "it",
+              "is_correct": false
+            },
+            {
+              "text": "that",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "I love music but I ____ like TV.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "do",
+              "is_correct": false
+            },
+            {
+              "text": "does",
+              "is_correct": false
+            },
+            {
+              "text": "don't",
+              "is_correct": true
+            },
+            {
+              "text": "doesn't",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "____ she like sport?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "Do",
+              "is_correct": false
+            },
+            {
+              "text": "Does",
+              "is_correct": true
+            },
+            {
+              "text": "Is",
+              "is_correct": false
+            },
+            {
+              "text": "Don’t",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "When ____ have lunch?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "is he",
+              "is_correct": false
+            },
+            {
+              "text": "he’s",
+              "is_correct": false
+            },
+            {
+              "text": "do he",
+              "is_correct": false
+            },
+            {
+              "text": "does he",
+              "is_correct": true
+            }
+          ]
+        },
+        {
+          "prompt": "Do you like ____ DVDs?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "watch",
+              "is_correct": false
+            },
+            {
+              "text": "watching",
+              "is_correct": true
+            },
+            {
+              "text": "watches",
+              "is_correct": false
+            },
+            {
+              "text": "to watching",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "They start ____ school at 8.00 in the morning.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "to",
+              "is_correct": false
+            },
+            {
+              "text": "at",
+              "is_correct": false
+            },
+            {
+              "text": "-",
+              "is_correct": true
+            },
+            {
+              "text": "the",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "Peter’s ____ name is Michael.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "brother’s",
+              "is_correct": true
+            },
+            {
+              "text": "sister is",
+              "is_correct": false
+            },
+            {
+              "text": "brother",
+              "is_correct": false
+            },
+            {
+              "text": "sisters",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "She’s very friendly but she ____ very quiet.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "never is",
+              "is_correct": false
+            },
+            {
+              "text": "’s often",
+              "is_correct": true
+            },
+            {
+              "text": "often is",
+              "is_correct": false
+            },
+            {
+              "text": "never",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "He hasn't got ____ brothers and sisters.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "some",
+              "is_correct": false
+            },
+            {
+              "text": "any",
+              "is_correct": true
+            },
+            {
+              "text": "the",
+              "is_correct": false
+            },
+            {
+              "text": "a",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "They went to the beach with some friends ____ Sunday.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "at",
+              "is_correct": false
+            },
+            {
+              "text": "the",
+              "is_correct": false
+            },
+            {
+              "text": "on",
+              "is_correct": true
+            },
+            {
+              "text": "in",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "What ____ your father look like?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "is",
+              "is_correct": false
+            },
+            {
+              "text": "do",
+              "is_correct": false
+            },
+            {
+              "text": "are",
+              "is_correct": false
+            },
+            {
+              "text": "does",
+              "is_correct": true
+            }
+          ]
+        },
+        {
+          "prompt": "How many children ____ got?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "they’ve",
+              "is_correct": false
+            },
+            {
+              "text": "have they",
+              "is_correct": true
+            },
+            {
+              "text": "they",
+              "is_correct": false
+            },
+            {
+              "text": "do they",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "She ____ jeans to work.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "wears usually",
+              "is_correct": false
+            },
+            {
+              "text": "is usually wearing",
+              "is_correct": false
+            },
+            {
+              "text": "usually wears",
+              "is_correct": true
+            },
+            {
+              "text": "is wearing usually",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "____ two armchairs and a sofa in the living room.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "It’s",
+              "is_correct": false
+            },
+            {
+              "text": "There are",
+              "is_correct": true
+            },
+            {
+              "text": "There have",
+              "is_correct": false
+            },
+            {
+              "text": "There’s",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "There aren’t ____ wardrobes in the main bedroom.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "any",
+              "is_correct": true
+            },
+            {
+              "text": "some",
+              "is_correct": false
+            },
+            {
+              "text": "the",
+              "is_correct": false
+            },
+            {
+              "text": "a",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "You ____ buy shoes in a post office.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "can to",
+              "is_correct": false
+            },
+            {
+              "text": "can",
+              "is_correct": false
+            },
+            {
+              "text": "can’t",
+              "is_correct": true
+            },
+            {
+              "text": "are",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "There is ____ butter in the fridge.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "one",
+              "is_correct": false
+            },
+            {
+              "text": "some",
+              "is_correct": true
+            },
+            {
+              "text": "any",
+              "is_correct": false
+            },
+            {
+              "text": "an",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "How ____ vegetables do you eat every day?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "many",
+              "is_correct": true
+            },
+            {
+              "text": "long",
+              "is_correct": false
+            },
+            {
+              "text": "more",
+              "is_correct": false
+            },
+            {
+              "text": "much",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "He ____ afraid of the dark when he was young.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "wasn’t",
+              "is_correct": true
+            },
+            {
+              "text": "weren’t",
+              "is_correct": false
+            },
+            {
+              "text": "were",
+              "is_correct": false
+            },
+            {
+              "text": "didn’t",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "We ____ born in 1985.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "is",
+              "is_correct": false
+            },
+            {
+              "text": "were",
+              "is_correct": true
+            },
+            {
+              "text": "was",
+              "is_correct": false
+            },
+            {
+              "text": "did",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "____ they do a lot of sport when they were at school?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "Were",
+              "is_correct": false
+            },
+            {
+              "text": "Do",
+              "is_correct": false
+            },
+            {
+              "text": "Was",
+              "is_correct": false
+            },
+            {
+              "text": "Did",
+              "is_correct": true
+            }
+          ]
+        },
+        {
+          "prompt": "We ____ to New Zealand when I was six.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "move",
+              "is_correct": false
+            },
+            {
+              "text": "moves",
+              "is_correct": false
+            },
+            {
+              "text": "moved",
+              "is_correct": true
+            },
+            {
+              "text": "moving",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "They ____ a taxi to the airport an hour ago.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "take",
+              "is_correct": false
+            },
+            {
+              "text": "took",
+              "is_correct": true
+            },
+            {
+              "text": "are taking",
+              "is_correct": false
+            },
+            {
+              "text": "takes",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "Is Chinese food ____ than Thai food?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "best",
+              "is_correct": false
+            },
+            {
+              "text": "more good",
+              "is_correct": false
+            },
+            {
+              "text": "better",
+              "is_correct": true
+            },
+            {
+              "text": "well",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "Today is ____ than yesterday.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "cold",
+              "is_correct": false
+            },
+            {
+              "text": "coldest",
+              "is_correct": false
+            },
+            {
+              "text": "more cold",
+              "is_correct": false
+            },
+            {
+              "text": "colder",
+              "is_correct": true
+            }
+          ]
+        },
+        {
+          "prompt": "He stayed at the ____ hotel in town.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "more expensive",
+              "is_correct": false
+            },
+            {
+              "text": "expensivest",
+              "is_correct": false
+            },
+            {
+              "text": "expensive",
+              "is_correct": false
+            },
+            {
+              "text": "most expensive",
+              "is_correct": true
+            }
+          ]
+        },
+        {
+          "prompt": "They ______ their homework now.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "are do",
+              "is_correct": false
+            },
+            {
+              "text": "did",
+              "is_correct": false
+            },
+            {
+              "text": "are doing",
+              "is_correct": true
+            },
+            {
+              "text": "does",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "We walked ten kilometres so we ____ hungry now.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "are getting",
+              "is_correct": true
+            },
+            {
+              "text": "get",
+              "is_correct": false
+            },
+            {
+              "text": "got",
+              "is_correct": false
+            },
+            {
+              "text": "has got",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "What ______ doing at the moment?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "is he",
+              "is_correct": true
+            },
+            {
+              "text": "does he",
+              "is_correct": false
+            },
+            {
+              "text": "is",
+              "is_correct": false
+            },
+            {
+              "text": "he’s",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "You ____ drive a car in the centre of town. It isn’t allowed.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "don’t have to",
+              "is_correct": false
+            },
+            {
+              "text": "can",
+              "is_correct": false
+            },
+            {
+              "text": "have to",
+              "is_correct": false
+            },
+            {
+              "text": "can’t",
+              "is_correct": true
+            }
+          ]
+        },
+        {
+          "prompt": "You ____ to walk, you can take a bus.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "mustn’t",
+              "is_correct": false
+            },
+            {
+              "text": "have",
+              "is_correct": false
+            },
+            {
+              "text": "must",
+              "is_correct": false
+            },
+            {
+              "text": "don’t have",
+              "is_correct": true
+            }
+          ]
+        },
+        {
+          "prompt": "He ____ to move to another country.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "want",
+              "is_correct": false
+            },
+            {
+              "text": "’d like",
+              "is_correct": true
+            },
+            {
+              "text": "likes",
+              "is_correct": false
+            },
+            {
+              "text": "goes",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "I’m ____ learn to cook.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "go to",
+              "is_correct": false
+            },
+            {
+              "text": "going",
+              "is_correct": false
+            },
+            {
+              "text": "going to",
+              "is_correct": true
+            },
+            {
+              "text": "go",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "Don't stay up late or you ____ be tired tomorrow.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "must",
+              "is_correct": false
+            },
+            {
+              "text": "won’t",
+              "is_correct": false
+            },
+            {
+              "text": "should",
+              "is_correct": false
+            },
+            {
+              "text": "’ll",
+              "is_correct": true
+            }
+          ]
+        },
+        {
+          "prompt": "Let’s ____ tennis this afternoon.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "play",
+              "is_correct": true
+            },
+            {
+              "text": "go",
+              "is_correct": false
+            },
+            {
+              "text": "to go",
+              "is_correct": false
+            },
+            {
+              "text": "playing",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "I’ve got the flu. I ____ take some medicine.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "shouldn’t",
+              "is_correct": false
+            },
+            {
+              "text": "might not",
+              "is_correct": false
+            },
+            {
+              "text": "going to",
+              "is_correct": false
+            },
+            {
+              "text": "should",
+              "is_correct": true
+            }
+          ]
+        },
+        {
+          "prompt": "____ you spoken to Jenny?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "Did",
+              "is_correct": false
+            },
+            {
+              "text": "Do",
+              "is_correct": false
+            },
+            {
+              "text": "Have",
+              "is_correct": true
+            },
+            {
+              "text": "Has",
+              "is_correct": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "vocabulary",
+      "title": "Vocabulary Section",
+      "questions": [
+        {
+          "prompt": "This is Sébastien. He's ____.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "Japan",
+              "is_correct": false
+            },
+            {
+              "text": "Spain",
+              "is_correct": false
+            },
+            {
+              "text": "Italy",
+              "is_correct": false
+            },
+            {
+              "text": "French",
+              "is_correct": true
+            }
+          ]
+        },
+        {
+          "prompt": "____ ’s your first name?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "Who",
+              "is_correct": false
+            },
+            {
+              "text": "What",
+              "is_correct": true
+            },
+            {
+              "text": "How",
+              "is_correct": false
+            },
+            {
+              "text": "Where",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "There are a lot of CDs ____ the shelves.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "in",
+              "is_correct": false
+            },
+            {
+              "text": "between",
+              "is_correct": false
+            },
+            {
+              "text": "on",
+              "is_correct": true
+            },
+            {
+              "text": "above",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "The cinema is ____ the bank.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "next",
+              "is_correct": false
+            },
+            {
+              "text": "in front",
+              "is_correct": false
+            },
+            {
+              "text": "opposite",
+              "is_correct": true
+            },
+            {
+              "text": "under",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "Can I have a ____ of milk, please?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "bar",
+              "is_correct": false
+            },
+            {
+              "text": "jar",
+              "is_correct": false
+            },
+            {
+              "text": "box",
+              "is_correct": false
+            },
+            {
+              "text": "carton",
+              "is_correct": true
+            }
+          ]
+        },
+        {
+          "prompt": "My birthday is on February ____.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "10rd",
+              "is_correct": false
+            },
+            {
+              "text": "10st",
+              "is_correct": false
+            },
+            {
+              "text": "10nd",
+              "is_correct": false
+            },
+            {
+              "text": "10th",
+              "is_correct": true
+            }
+          ]
+        },
+        {
+          "prompt": "____ did you last see them?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "What",
+              "is_correct": false
+            },
+            {
+              "text": "When",
+              "is_correct": true
+            },
+            {
+              "text": "Who",
+              "is_correct": false
+            },
+            {
+              "text": "Which",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "We went ____ at the weekend.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "the shops",
+              "is_correct": false
+            },
+            {
+              "text": "to shops",
+              "is_correct": false
+            },
+            {
+              "text": "shopping",
+              "is_correct": true
+            },
+            {
+              "text": "shops",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "Can you tell me the ____ to the library?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "road",
+              "is_correct": false
+            },
+            {
+              "text": "way",
+              "is_correct": true
+            },
+            {
+              "text": "street",
+              "is_correct": false
+            },
+            {
+              "text": "place",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "He goes to work ____ train.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "in",
+              "is_correct": false
+            },
+            {
+              "text": "on",
+              "is_correct": false
+            },
+            {
+              "text": "by the",
+              "is_correct": false
+            },
+            {
+              "text": "by",
+              "is_correct": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "listening",
+      "title": "Listening Section",
+      "questions": [
+        {
+          "prompt": "What time does Jim start work?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "9.15",
+              "is_correct": true
+            },
+            {
+              "text": "8.15",
+              "is_correct": false
+            },
+            {
+              "text": "7.00",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "Who is visiting Steve for the weekend?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "his sister",
+              "is_correct": false
+            },
+            {
+              "text": "his brother",
+              "is_correct": true
+            },
+            {
+              "text": "his cousin",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "How long did the woman stay in New York?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "2 days",
+              "is_correct": false
+            },
+            {
+              "text": "3 days",
+              "is_correct": true
+            },
+            {
+              "text": "4 days",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "What has the boy got?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "headache",
+              "is_correct": false
+            },
+            {
+              "text": "flu",
+              "is_correct": false
+            },
+            {
+              "text": "stomachache",
+              "is_correct": true
+            }
+          ]
+        },
+        {
+          "prompt": "Where can Sheila eat her sandwiches?",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "office",
+              "is_correct": false
+            },
+            {
+              "text": "staff room",
+              "is_correct": true
+            },
+            {
+              "text": "park",
+              "is_correct": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "reading",
+      "title": "Reading Section",
+      "questions": [
+        {
+          "prompt": "Tuvalu is one of the smallest countries ____.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "on our planet",
+              "is_correct": true
+            },
+            {
+              "text": "in the Atlantic Ocean",
+              "is_correct": false
+            },
+            {
+              "text": "less than 4 metres high",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "There are not many ____ on Tuvalu.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "beaches",
+              "is_correct": false
+            },
+            {
+              "text": "palm trees",
+              "is_correct": false
+            },
+            {
+              "text": "places to stay",
+              "is_correct": true
+            }
+          ]
+        },
+        {
+          "prompt": "The Rafflesia flower ____.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "is heavy",
+              "is_correct": true
+            },
+            {
+              "text": "has a beautiful smell",
+              "is_correct": false
+            },
+            {
+              "text": "is very easy to find",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "____ can make us happier people.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "Being lucky",
+              "is_correct": false
+            },
+            {
+              "text": "Our genes",
+              "is_correct": true
+            },
+            {
+              "text": "Moving to a new house",
+              "is_correct": false
+            }
+          ]
+        },
+        {
+          "prompt": "To become happier you need to ____.",
+          "type": "mcq",
+          "options": [
+            {
+              "text": "move to Europe",
+              "is_correct": false
+            },
+            {
+              "text": "do things for other people",
+              "is_correct": true
+            },
+            {
+              "text": "stop working",
+              "is_correct": false
+            }
+          ]
+        }
+      ],
+      "passage": "Three things to do before you leave the planet!\n1 Visit Tuvalu\nTuvalu in the Pacific Ocean is the fourth-smallest country in the world. Sadly, it’s also only 4 metres above sea level at its highest. Because of the rise in sea levels, Tuvalu might be the first country to disappear under the waves. The islands are a paradise of beautiful tropical beaches and palm trees. Why don’t you go there before they disappear? Take a plane from Fiji, stay in one of Tuvalu’s four guest houses and have a drink in its one bar. Go now, before it dies.\n\n2 See the world’s largest flower\nGo to the jungles of Borneo or Sumatra and find the world’s strangest plants, Rafflesia. For most of its life, the plant is invisible and hard to find. But to find it is amazing. It grows into the world’s largest flower. It can be one metre across and weigh 10 kilos. And it smells terrible! However, it only lasts a few days. You’ll be lucky to see one.\n\n3 Find happiness\nWhy do some people live perfectly happy lives while others find life hard? The answer might be in our genes – some people are born happy. Lucky them, I hear you say! Don’t worry, there’s still a lot you can do, for example: help other people, make lots of friends or change your job. Or learn about how people live in Denmark. It’s the only European country where people are happier than they were 30 years ago. Why? Go and find out!"
+    }
+  ]
+}
