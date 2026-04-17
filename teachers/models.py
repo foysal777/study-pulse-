@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -116,3 +118,37 @@ class GeneralInfo(models.Model):
 
     def __str__(self):
         return self.file_name
+
+
+class TeacherProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="teacher_profile"
+    )
+
+    name = models.CharField(max_length=150)
+    phone_number = models.CharField(max_length=20, unique=True)
+
+    age = models.PositiveIntegerField(
+        validators=[MinValueValidator(18), MaxValueValidator(100)]
+    )
+
+    gender = models.CharField(max_length=20, blank=True, null=True)
+    qualification = models.CharField(max_length=255, blank=True, null=True)
+    experience = models.CharField(max_length=20, blank=True, null=True)
+    profile_picture = models.ImageField(
+        upload_to="teacher_profiles/",
+        blank=True,
+        null=True
+    )
+    teaching_medium = models.CharField(max_length=255, blank=True, null=True)
+    courses_classes_taught = models.CharField(max_length=255, blank=True, null=True)
+    other_courses_classes = models.TextField(blank=True, null=True)
+    offline_location = models.TextField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name

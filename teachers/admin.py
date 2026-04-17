@@ -6,7 +6,10 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin
 
-from teachers.models import GeneralInfo, PendingRequest, SessionList, Teacher, TeacherLevel
+from teachers.models import GeneralInfo, PendingRequest, SessionList, Teacher, TeacherLevel, TeacherProfile
+
+
+from teachers.models import GeneralInfo, PendingRequest, SessionList, Teacher, TeacherLevel, TeacherProfile
 
 
 class CapabilityLevelDropdownWidget(forms.CheckboxSelectMultiple):
@@ -55,6 +58,13 @@ class PlaceholderAdminMixin:
             widget.attrs["placeholder"] = placeholder
 
         return form
+
+
+@admin.register(TeacherProfile)
+class TeacherProfileAdmin(PlaceholderAdminMixin, ModelAdmin):
+    list_display = ("id", "name", "phone_number", "age", "gender", "created_at")
+    search_fields = ("name", "phone_number")
+    list_filter = ("gender",)
 
 
 # @admin.register(TeacherLevel)

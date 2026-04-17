@@ -1,4 +1,6 @@
 from django.db import transaction
+from django.utils import timezone
+from decimal import Decimal, ROUND_HALF_UP
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -6,7 +8,12 @@ from rest_framework.permissions import IsAuthenticated
 
 from accounts.models import UserRole
 from common.responses import error_response, success_response
-from students.models import Intterest, StudentProfile, AssessmentTemplate
+from students.models import (
+    Intterest, StudentProfile, AssessmentTemplate,
+    AssessmentQuestion, AssessmentOption,
+    StudentAssessmentAttempt, StudentAssessmentAnswer,
+    AssessmentAttemptStatus, AssessmentLevelBand
+)
 from students.serializers import (
     StudentErrorResponseSerializer,
     StudentInterestOptionsSuccessResponseSerializer,
@@ -15,7 +22,9 @@ from students.serializers import (
     AssessmentTemplateDisplaySerializer,
     AssessmentTemplateListSerializer,
     AssessmentTemplateSuccessResponseSerializer,
-    AssessmentTemplateListSuccessResponseSerializer
+    AssessmentTemplateListSuccessResponseSerializer,
+    ExamSubmitRequestSerializer,
+    AssessmentResultSuccessResponseSerializer,
 )
 
 
@@ -227,3 +236,172 @@ def assessment_detail(request, template_id):
 
     serializer = AssessmentTemplateDisplaySerializer(template)
     return success_response(serializer.data, message="Assessment questions fetched successfully.")
+
+
+@extend_schema(
+    tags=["Students Assessment"],
+    operation_id="students_assessment_submit",
+    request=ExamSubmitRequestSerializer,
+    responses={
+        200: AssessmentResultSuccessResponseSerializer,
+        400: OpenApiResponse(response=StudentErrorResponseSerializer, description="Validation error."),
+        403: OpenApiResponse(response=StudentErrorResponseSerializer, description="Only students allowed."),
+        404: OpenApiResponse(description="Assessment level not found."),
+    },
+    description=(
+        "Submit answers for an assessment level. "
+        "Returns skill-wise scores, overall percentage, pass/fail result, and mapped level."
+    ),
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def assessment_submit(request, template_id):
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Only student users can access this endpoint.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    try:
+        template = AssessmentTemplate.objects.prefetch_related(
+            "sections__questions__options"
+        ).get(id=template_id, is_active=True)
+    except AssessmentTemplate.DoesNotExist:
+        return error_response("Assessment level not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+    serializer = ExamSubmitRequestSerializer(data=request.data)
+    if not serializer.is_valid():
+        return error_response("Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    submitted_answers = serializer.validated_data["answers"]
+
+    # Build lookup maps
+    all_questions = {}
+    all_options = {}
+    for section in template.sections.all():
+        for question in section.questions.all():
+            all_questions[question.id] = question
+            for option in question.options.all():
+                all_options[option.id] = option
+
+    if not all_questions:
+        return error_response(
+            "This assessment has no questions yet.",
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+
+    with transaction.atomic():
+        # Create attempt record
+        attempt = StudentAssessmentAttempt.objects.create(
+            student=request.user,
+            template=template,
+            status=AssessmentAttemptStatus.SUBMITTED,
+            submitted_at=timezone.now(),
+        )
+
+        skill_earned = {}   # skill -> earned marks
+        skill_max = {}      # skill -> total max marks
+        answer_objects = []
+
+        for ans in submitted_answers:
+            q_id = ans["question_id"]
+            if q_id not in all_questions:
+                continue  # skip unknown question ids
+
+            question = all_questions[q_id]
+            skill = question.section.skill
+            skill_max[skill] = skill_max.get(skill, Decimal("0")) + question.marks
+
+            selected_option = None
+            is_correct = None
+            auto_score = Decimal("0")
+
+            opt_id = ans.get("selected_option_id")
+            if opt_id and opt_id in all_options:
+                selected_option = all_options[opt_id]
+                # Validate option belongs to the question
+                if selected_option.question_id == question.id:
+                    is_correct = selected_option.is_correct
+                    auto_score = question.marks if is_correct else Decimal("0")
+                else:
+                    selected_option = None  # invalid pairing
+
+            skill_earned[skill] = skill_earned.get(skill, Decimal("0")) + auto_score
+
+            answer_objects.append(StudentAssessmentAnswer(
+                attempt=attempt,
+                question=question,
+                selected_option=selected_option,
+                text_answer=ans.get("text_answer", ""),
+                is_correct=is_correct,
+                auto_score=auto_score,
+            ))
+
+        StudentAssessmentAnswer.objects.bulk_create(answer_objects, ignore_conflicts=True)
+
+        # Aggregate scores
+        total_earned = sum(skill_earned.values(), Decimal("0"))
+        total_max = sum(skill_max.values(), Decimal("0"))
+
+        overall_pct = (
+            (total_earned * Decimal("100") / total_max).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            if total_max > 0 else Decimal("0")
+        )
+        is_passed = overall_pct >= template.pass_percentage
+
+        # Per-skill score fields on attempt
+        skill_field_map = {
+            "reading": "reading_score",
+            "listening": "listening_score",
+            "writing": "writing_score",
+            "grammar": "grammar_score",
+            "vocabulary": "vocabulary_score",
+        }
+        for skill, field in skill_field_map.items():
+            setattr(attempt, field, skill_earned.get(skill, None))
+
+        attempt.total_score = total_earned
+        attempt.is_passed = is_passed
+        attempt.status = AssessmentAttemptStatus.EVALUATED
+        attempt.evaluated_at = timezone.now()
+        attempt.save()
+
+        # Find mapped level
+        mapped_level = None
+        level_band = (
+            AssessmentLevelBand.objects
+            .filter(template=template, min_score__lte=overall_pct, max_score__gte=overall_pct)
+            .first()
+        )
+        if level_band:
+            mapped_level = level_band.get_label_display()
+
+        # Build skill_scores list
+        skill_scores = []
+        for section in template.sections.all():
+            skill = section.skill
+            earned = skill_earned.get(skill, Decimal("0"))
+            max_s = skill_max.get(skill, Decimal("0"))
+            pct = (
+                (earned * Decimal("100") / max_s).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                if max_s > 0 else Decimal("0")
+            )
+            skill_scores.append({
+                "skill": skill,
+                "score": earned,
+                "max_score": max_s,
+                "percentage": pct,
+            })
+
+    result = {
+        "attempt_id": attempt.id,
+        "template_name": template.name,
+        "total_score": total_earned,
+        "max_total_score": total_max,
+        "overall_percentage": overall_pct,
+        "is_passed": is_passed,
+        "pass_percentage": template.pass_percentage,
+        "mapped_level": mapped_level,
+        "skill_scores": skill_scores,
+    }
+    return success_response(result, message="Exam submitted and evaluated successfully.")

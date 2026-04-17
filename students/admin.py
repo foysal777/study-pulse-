@@ -391,7 +391,34 @@ class AssessmentTemplateAdmin(PlaceholderAdminMixin, ModelAdmin):
 class AssessmentQuestionInline(admin.TabularInline):
     model = AssessmentQuestion
     extra = 0
-    fields = ("order", "question_type", "difficulty", "marks", "is_active")
+    fields = ("order", "question_type", "marks", "is_active")
+
+    def save_new(self, form, commit=True):
+        obj = super().save_new(form, commit=False)
+        self._apply_skill_question_type(obj)
+        if commit:
+            obj.save()
+        return obj
+
+    def save_existing(self, form, instance, commit=True):
+        obj = super().save_existing(form, instance, commit=False)
+        self._apply_skill_question_type(obj)
+        if commit:
+            obj.save()
+        return obj
+
+    @staticmethod
+    def _apply_skill_question_type(obj):
+        if obj.section_id:
+            from students.models import AssessmentSection
+            try:
+                skill = AssessmentSection.objects.get(pk=obj.section_id).skill
+                if skill == "reading":
+                    obj.question_type = "passage"
+                elif skill == "listening":
+                    obj.question_type = "audio"
+            except AssessmentSection.DoesNotExist:
+                pass
 
 
 @admin.register(AssessmentSection)
@@ -410,11 +437,10 @@ class AssessmentOptionInline(admin.TabularInline):
 
 @admin.register(AssessmentQuestion)
 class AssessmentQuestionAdmin(PlaceholderAdminMixin, ModelAdmin):
-    list_display = ("id", "section", "order", "question_type", "difficulty", "marks", "is_active")
-    list_filter = ("question_type", "difficulty", "is_active", "section__skill", "section__template")
+    list_display = ("id", "section", "order", "question_type", "marks", "is_active")
+    list_filter = ("question_type", "is_active", "section__skill", "section__template")
     search_fields = ("prompt", "section__title", "section__template__name")
     inlines = (AssessmentOptionInline,)
-    readonly_fields = ()
     fieldsets = (
         (
             "Question",
@@ -423,7 +449,6 @@ class AssessmentQuestionAdmin(PlaceholderAdminMixin, ModelAdmin):
                     "section",
                     "order",
                     "question_type",
-                    "difficulty",
                     "marks",
                     "is_active",
                 ),
@@ -442,6 +467,26 @@ class AssessmentQuestionAdmin(PlaceholderAdminMixin, ModelAdmin):
             },
         ),
     )
+
+    @staticmethod
+    def _skill_forces_type(skill):
+        """Return the forced question_type for a skill, or None if free choice."""
+        return {"reading": "passage", "listening": "audio"}.get(skill)
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj) or [])
+        if obj and obj.section:
+            if self._skill_forces_type(obj.section.skill):
+                if "question_type" not in ro:
+                    ro.append("question_type")
+        return tuple(ro)
+
+    def save_model(self, request, obj, form, change):
+        if obj.section:
+            forced = self._skill_forces_type(obj.section.skill)
+            if forced:
+                obj.question_type = forced
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(AssessmentOption)
