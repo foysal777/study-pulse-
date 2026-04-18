@@ -152,3 +152,101 @@ class TeacherProfile(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class TeachersLocation(models.Model):
+    teacher = models.ForeignKey(
+        TeacherProfile,
+        on_delete=models.CASCADE,
+        related_name="locations",
+        verbose_name="Teacher"
+    )
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Teachers Location"
+        verbose_name_plural = "Teachers Locations"
+
+    def __str__(self):
+        return f"{self.teacher.name} - ({self.latitude}, {self.longitude})"
+
+
+class SlotMode(models.TextChoices):
+    ONLINE = "online", "Online"
+    OFFLINE = "offline", "Offline"
+
+
+class DayOfWeek(models.TextChoices):
+    MONDAY = "Monday", "Monday"
+    TUESDAY = "Tuesday", "Tuesday"
+    WEDNESDAY = "Wednesday", "Wednesday"
+    THURSDAY = "Thursday", "Thursday"
+    FRIDAY = "Friday", "Friday"
+    SATURDAY = "Saturday", "Saturday"
+    SUNDAY = "Sunday", "Sunday"
+
+
+class TeacherAvailability(models.Model):
+    teacher = models.ForeignKey(
+        TeacherProfile,
+        on_delete=models.CASCADE,
+        related_name="availabilities"
+    )
+    day_of_week = models.CharField(max_length=20, choices=DayOfWeek.choices)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    mode = models.CharField(max_length=10, choices=SlotMode.choices)
+
+    class Meta:
+        verbose_name = "Teacher Availability"
+        verbose_name_plural = "Teacher Availabilities"
+        unique_together = ("teacher", "day_of_week", "start_time")
+
+    def __str__(self):
+        return f"{self.teacher.name} - {self.day_of_week} ({self.start_time}-{self.end_time})"
+
+
+class TeacherSlot(models.Model):
+    teacher = models.ForeignKey(
+        TeacherProfile,
+        on_delete=models.CASCADE,
+        related_name="slots"
+    )
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    mode = models.CharField(max_length=10, choices=SlotMode.choices)
+    max_students = models.PositiveIntegerField(default=40)
+    booked_students = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Teacher Slot"
+        verbose_name_plural = "Teacher Slots"
+        unique_together = ("teacher", "date", "start_time", "mode")
+
+    def __str__(self):
+        return f"{self.teacher.name} - {self.date} {self.start_time} ({self.booked_students}/{self.max_students})"
+
+
+class StudentBooking(models.Model):
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="teacher_bookings"
+    )
+    slot = models.ForeignKey(
+        TeacherSlot,
+        on_delete=models.CASCADE,
+        related_name="bookings"
+    )
+    booked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Student Booking"
+        verbose_name_plural = "Student Bookings"
+        unique_together = ("student", "slot")
+
+    def __str__(self):
+        return f"{self.student.full_name} - {self.slot}"

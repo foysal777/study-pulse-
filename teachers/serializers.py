@@ -1,5 +1,12 @@
 from rest_framework import serializers
-from teachers.models import TeacherProfile
+from teachers.models import (
+    TeacherProfile,
+    TeachersLocation,
+    TeacherAvailability,
+    TeacherSlot,
+    StudentBooking,
+    SlotMode,
+)
 
 
 class TeacherSetPasswordSerializer(serializers.Serializer):
@@ -39,3 +46,39 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
             "created_at", "updated_at"
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class TeachersLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeachersLocation
+        fields = ["id", "teacher", "latitude", "longitude", "created_at"]
+        read_only_fields = ["id", "teacher", "created_at"]
+
+
+class TeacherAvailabilitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeacherAvailability
+        fields = ["id", "teacher", "day_of_week", "start_time", "end_time", "mode"]
+        read_only_fields = ["id", "teacher"]
+
+
+class AvailableSlotSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    start_time = serializers.TimeField()
+    end_time = serializers.TimeField()
+    mode = serializers.ChoiceField(choices=SlotMode.choices)
+    available_capacity = serializers.IntegerField()
+    offline_location = serializers.CharField(required=False, allow_null=True)
+
+
+class StudentBookingSerializer(serializers.ModelSerializer):
+    # We'll use these for input: date, start_time, mode
+    date = serializers.DateField(write_only=True)
+    start_time = serializers.TimeField(write_only=True)
+    mode = serializers.ChoiceField(choices=SlotMode.choices, write_only=True)
+    offline_location = serializers.CharField(required=False, allow_null=True, write_only=True)
+
+    class Meta:
+        model = StudentBooking
+        fields = ["id", "student", "slot", "booked_at", "date", "start_time", "mode", "offline_location"]
+        read_only_fields = ["id", "student", "slot", "booked_at"]

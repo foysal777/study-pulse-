@@ -6,10 +6,14 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin
 
-from teachers.models import GeneralInfo, PendingRequest, SessionList, Teacher, TeacherLevel, TeacherProfile
+from teachers.models import (
+    GeneralInfo, PendingRequest, SessionList, Teacher, TeacherLevel,
+    TeacherProfile, TeachersLocation, TeacherAvailability,
+    TeacherSlot, StudentBooking
+)
 
 
-from teachers.models import GeneralInfo, PendingRequest, SessionList, Teacher, TeacherLevel, TeacherProfile
+
 
 
 class CapabilityLevelDropdownWidget(forms.CheckboxSelectMultiple):
@@ -859,3 +863,33 @@ class GeneralInfoAdmin(PlaceholderAdminMixin, ModelAdmin):
         return self._link_button(obj.kids_learning_club_link, "Kids Learning Club")
 
     kids_learning_club_button.short_description = "Kids learning club"
+
+@admin.register(TeachersLocation)
+class TeachersLocationAdmin(ModelAdmin):
+    list_display = ("id", "teacher", "latitude", "longitude", "created_at")
+    search_fields = ("teacher__name",)
+    autocomplete_fields = ("teacher",)
+
+
+@admin.register(TeacherAvailability)
+class TeacherAvailabilityAdmin(ModelAdmin):
+    list_display = ("id", "teacher", "day_of_week", "start_time", "end_time", "mode")
+    list_filter = ("day_of_week", "mode", "teacher")
+    search_fields = ("teacher__name",)
+    autocomplete_fields = ("teacher",)
+
+
+@admin.register(TeacherSlot)
+class TeacherSlotAdmin(ModelAdmin):
+    list_display = ("id", "teacher", "date", "start_time", "end_time", "mode", "booked_students", "max_students")
+    list_filter = ("date", "mode", "teacher")
+    search_fields = ("teacher__name", "date")
+    autocomplete_fields = ("teacher",)
+
+
+@admin.register(StudentBooking)
+class StudentBookingAdmin(ModelAdmin):
+    list_display = ("id", "student", "slot", "booked_at")
+    list_filter = ("booked_at", "slot__date")
+    search_fields = ("student__full_name", "slot__teacher__name")
+    autocomplete_fields = ("slot",)
