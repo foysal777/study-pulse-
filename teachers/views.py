@@ -16,6 +16,10 @@ from teachers.serializers import (
     TeacherAvailabilitySerializer,
     AvailableSlotSerializer,
     StudentBookingSerializer,
+    SessionListSerializer,
+    TeacherBookedSlotSerializer,
+    TeacherStudentListSerializer,
+    TeacherFeedbackSerializer,
 )
 from teachers.models import (
     TeacherAvailability,
@@ -25,7 +29,7 @@ from teachers.models import (
 )
 from django.db import transaction
 from django.db.models import F, Sum, Min
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 @extend_schema(
@@ -278,8 +282,8 @@ def student_available_slots(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def student_book_slot(request):
-    # This endpoint is for students, but let's be flexible or check role if needed.
-    # The requirement says "Student Side".
+    if request.user.role != UserRole.STUDENT:
+        return error_response("Only students can book slots.", status_code=status.HTTP_403_FORBIDDEN)
     
     serializer = StudentBookingSerializer(data=request.data)
     if not serializer.is_valid():
@@ -338,7 +342,7 @@ def student_book_slot(request):
                 start_time=start_time,
                 mode=mode,
                 defaults={
-                    "end_time": (datetime.combine(date, start_time) + datetime.timedelta(hours=1)).time() if "end_time" not in request.data else request.data.get("end_time")
+                    "end_time": (datetime.combine(date, start_time) + timedelta(hours=1)).time() if "end_time" not in request.data else request.data.get("end_time")
                 }
             )
             # If created, end_time logic above is a bit messy, let's fix it.
@@ -394,3 +398,77 @@ def student_cancel_booking(request, booking_id):
         return error_response("Booking not found.", status_code=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return error_response(f"Cancellation failed: {str(e)}", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@extend_schema(
+    methods=["GET"],
+    tags=["Teachers Sessions"],
+    operation_id="teachers_booked_sessions_list",
+    responses={200: TeacherBookedSlotSerializer(many=True)},
+    description="Fetch the list of sessions (slots) that have at least one booking for the logged-in teacher.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def teacher_booked_sessions(request):
+    if request.user.role != UserRole.TEACHER:
+        return error_response("Only teachers can access this endpoint.", status_code=status.HTTP_403_FORBIDDEN)
+
+    try:
+        profile = TeacherProfile.objects.get(user=request.user)
+    except TeacherProfile.DoesNotExist:
+        return error_response("Teacher profile not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+    # Filter slots with bookings
+    slots = TeacherSlot.objects.filter(teacher=profile, booked_students__gt=0).order_by("-date", "-start_time")
+    
+    serializer = TeacherBookedSlotSerializer(slots, many=True)
+    return success_response(serializer.data, message="Booked sessions fetched successfully.")
+
+
+@extend_schema(
+    methods=["GET"],
+    tags=["Teachers Sessions"],
+    operation_id="teachers_slot_students_list",
+    responses={200: TeacherStudentListSerializer(many=True)},
+    description="Fetch the list of students who booked a specific slot.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def teacher_slot_students(request, slot_id):
+    if request.user.role != UserRole.TEACHER:
+        return error_response("Only teachers can access this endpoint.", status_code=status.HTTP_403_FORBIDDEN)
+
+    try:
+        slot = TeacherSlot.objects.get(id=slot_id, teacher__user=request.user)
+    except TeacherSlot.DoesNotExist:
+        return error_response("Slot not found or you don't have access to it.", status_code=status.HTTP_404_NOT_FOUND)
+
+    bookings = slot.bookings.all().select_related("student")
+    serializer = TeacherStudentListSerializer(bookings, many=True)
+    return success_response(serializer.data, message="Student list fetched successfully.")
+
+
+@extend_schema(
+    methods=["POST"],
+    tags=["Teachers Sessions"],
+    operation_id="teachers_student_feedback",
+    request=TeacherFeedbackSerializer,
+    responses={200: TeacherStudentListSerializer},
+    description="Provide feedback and marks for a specific student booking.",
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def teacher_student_feedback(request, booking_id):
+    if request.user.role != UserRole.TEACHER:
+        return error_response("Only teachers can access this endpoint.", status_code=status.HTTP_403_FORBIDDEN)
+
+    try:
+        booking = StudentBooking.objects.get(id=booking_id, slot__teacher__user=request.user)
+    except StudentBooking.DoesNotExist:
+        return error_response("Booking not found or you don't have access to it.", status_code=status.HTTP_404_NOT_FOUND)
+
+    serializer = TeacherFeedbackSerializer(booking, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return success_response(TeacherStudentListSerializer(booking).data, message="Feedback submitted successfully.")
+    return error_response("Invalid data.", errors=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)

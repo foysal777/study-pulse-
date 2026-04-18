@@ -94,6 +94,7 @@ class StudentProfile(models.Model):
         related_name="student_profile",
         limit_choices_to={"role": "student"},
     )
+    student_name = models.CharField(max_length=255, blank=True)
     phone_number = models.CharField(max_length=20, blank=True)
     age = models.PositiveIntegerField(null=True, blank=True)
     gender = models.CharField(max_length=20, blank=True)

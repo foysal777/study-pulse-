@@ -5,7 +5,9 @@ from teachers.models import (
     TeacherAvailability,
     TeacherSlot,
     StudentBooking,
+    StudentBooking,
     SlotMode,
+    SessionList,
 )
 
 
@@ -82,3 +84,50 @@ class StudentBookingSerializer(serializers.ModelSerializer):
         model = StudentBooking
         fields = ["id", "student", "slot", "booked_at", "date", "start_time", "mode", "offline_location"]
         read_only_fields = ["id", "student", "slot", "booked_at"]
+
+
+class SessionListSerializer(serializers.ModelSerializer):
+    meeting_link = serializers.ReadOnlyField(source='accessible_meeting_link')
+
+    class Meta:
+        model = SessionList
+        fields = [
+            "id", "teacher_name", "date_time", "number_of_students", 
+            "meeting_link", "send_notification", "cancel", "created_at"
+        ]
+        read_only_fields = ["id", "created_at"]
+
+
+class TeacherBookedSlotSerializer(serializers.ModelSerializer):
+    meeting_link = serializers.ReadOnlyField(source='accessible_meeting_link')
+
+    class Meta:
+        model = TeacherSlot
+        fields = [
+            "id", "date", "start_time", "end_time", "mode", 
+            "booked_students", "max_students", "meeting_link"
+        ]
+
+
+class TeacherStudentListSerializer(serializers.ModelSerializer):
+    student_name = serializers.SerializerMethodField()
+    student_email = serializers.EmailField(source="student.email", read_only=True)
+    
+    class Meta:
+        model = StudentBooking
+        fields = ["id", "student_name", "student_email", "marks", "feedback", "booked_at"]
+
+    def get_student_name(self, obj):
+        if hasattr(obj.student, 'student_profile') and obj.student.student_profile.student_name:
+            return obj.student.student_profile.student_name
+        return obj.student.full_name
+
+
+class TeacherFeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentBooking
+        fields = ["marks", "feedback"]
+        extra_kwargs = {
+            "marks": {"required": True},
+            "feedback": {"required": True},
+        }

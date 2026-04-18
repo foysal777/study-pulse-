@@ -158,6 +158,7 @@ class SessionListAdmin(PlaceholderAdminMixin, ModelAdmin):
         "id",
         "teacher_name",
         "date_time",
+        "meeting_link",
         "number_of_students",
         "actions_menu",
     )
@@ -168,7 +169,7 @@ class SessionListAdmin(PlaceholderAdminMixin, ModelAdmin):
         (
             None,
             {
-                "fields": ("teacher_name", "date_time", "number_of_students"),
+                "fields": ("teacher_name", "date_time", "number_of_students", "meeting_link"),
             },
         ),
         (
@@ -885,6 +886,7 @@ class TeacherSlotAdmin(ModelAdmin):
     list_filter = ("date", "mode", "teacher")
     search_fields = ("teacher__name", "date")
     autocomplete_fields = ("teacher",)
+    fields = ("teacher", "date", "start_time", "end_time", "mode", "max_students", "booked_students", "meeting_link")
 
 
 @admin.register(StudentBooking)

@@ -2,6 +2,8 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone
+from datetime import timedelta
 
 
 class TeacherLevelCode(models.TextChoices):
@@ -59,10 +61,23 @@ class SessionList(models.Model):
     )
     date_time = models.DateTimeField()
     number_of_students = models.PositiveIntegerField()
+    meeting_link = models.URLField(blank=True, null=True, verbose_name="Meeting Link")
     send_notification = models.TextField(blank=True, verbose_name="Send notification")
     cancel = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def accessible_meeting_link(self):
+        if not self.meeting_link:
+            return None
+        
+        # 5 minutes before the session starts
+        visibility_time = self.date_time - timedelta(minutes=5)
+        
+        if timezone.now() >= visibility_time:
+            return self.meeting_link
+        return None
 
     class Meta:
         ordering = ["-date_time"]
@@ -220,6 +235,21 @@ class TeacherSlot(models.Model):
     mode = models.CharField(max_length=10, choices=SlotMode.choices)
     max_students = models.PositiveIntegerField(default=40)
     booked_students = models.PositiveIntegerField(default=0)
+    meeting_link = models.URLField(blank=True, null=True, verbose_name="Meeting Link")
+
+    @property
+    def accessible_meeting_link(self):
+        if not self.meeting_link:
+            return None
+        
+        # 5 minutes before the session starts
+        # Combining date and start_time
+        session_start = timezone.make_aware(datetime.combine(self.date, self.start_time))
+        visibility_time = session_start - timedelta(minutes=5)
+        
+        if timezone.now() >= visibility_time:
+            return self.meeting_link
+        return None
 
     class Meta:
         verbose_name = "Teacher Slot"
@@ -242,6 +272,8 @@ class StudentBooking(models.Model):
         related_name="bookings"
     )
     booked_at = models.DateTimeField(auto_now_add=True)
+    marks = models.PositiveIntegerField(null=True, blank=True)
+    feedback = models.TextField(null=True, blank=True)
 
     class Meta:
         verbose_name = "Student Booking"

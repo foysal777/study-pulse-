@@ -11,4 +11,7 @@ urlpatterns = [
     path("available-slots/", views.student_available_slots, name="student_available_slots"),
     path("book-slot/", views.student_book_slot, name="student_book_slot"),
     path("cancel-booking/<int:booking_id>/", views.student_cancel_booking, name="student_cancel_booking"),
+    path("booked-sessions/", views.teacher_booked_sessions, name="teacher_booked_sessions"),
+    path("slots/<int:slot_id>/students/", views.teacher_slot_students, name="teacher_slot_students"),
+    path("bookings/<int:booking_id>/feedback/", views.teacher_student_feedback, name="teacher_student_feedback"),
 ]
