@@ -14,4 +14,7 @@ urlpatterns = [
     path("booked-sessions/", views.teacher_booked_sessions, name="teacher_booked_sessions"),
     path("slots/<int:slot_id>/students/", views.teacher_slot_students, name="teacher_slot_students"),
     path("bookings/<int:booking_id>/feedback/", views.teacher_student_feedback, name="teacher_student_feedback"),
+    path("request-cancellation/", views.teacher_request_cancellation, name="teacher_request_cancellation"),
+    path("pending-requests/", views.teacher_pending_requests, name="teacher_pending_requests"),
+    path("admin-notification-count/", views.admin_notification_count, name="admin_notification_count"),
 ]

@@ -39,3 +39,8 @@ def send_teacher_welcome_email(teacher_name: str, email: str, temp_password: str
         or getattr(settings, "EMAIL_HOST_USER", None)
     )
     send_mail(subject, message, from_email, [email], fail_silently=False)
+
+
+def get_pending_requests_count(request=None):
+    from teachers.models import PendingRequest, RequestStatus
+    return PendingRequest.objects.filter(status=RequestStatus.PENDING).count()

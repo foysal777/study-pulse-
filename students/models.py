@@ -95,6 +95,7 @@ class StudentProfile(models.Model):
         limit_choices_to={"role": "student"},
     )
     student_name = models.CharField(max_length=255, blank=True)
+    profile_picture = models.ImageField(upload_to="student_profiles/", blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True)
     age = models.PositiveIntegerField(null=True, blank=True)
     gender = models.CharField(max_length=20, blank=True)

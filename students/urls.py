@@ -9,4 +9,6 @@ urlpatterns = [
     path("assessments/levels/", views.assessment_levels, name="assessment_levels"),
     path("assessments/levels/<int:template_id>/", views.assessment_detail, name="assessment_detail"),
     path("assessments/levels/<int:template_id>/submit/", views.assessment_submit, name="assessment_submit"),
+    path("dashboard/", views.student_dashboard, name="student_dashboard"),
+    path("cancel-booking/<int:booking_id>/", views.cancel_booking, name="cancel_booking"),
 ]

@@ -88,17 +88,27 @@ class SessionList(models.Model):
         return f"{self.teacher_name} - {self.date_time:%Y-%m-%d %H:%M}"
 
 
+class RequestStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    APPROVED = "approved", "Approved"
+    CANCELLED = "cancelled", "Cancelled"
+
+
+class RequestType(models.TextChoices):
+    SESSION_CANCELLATION = "session_cancellation", "Session Cancellation"
+    AVAILABILITY_WITHDRAWAL = "availability_withdrawal", "Availability Withdrawal"
+
+
 class PendingRequest(models.Model):
-    teacher_name = models.ForeignKey(
-        Teacher,
+    teacher = models.ForeignKey(
+        "TeacherProfile",
         on_delete=models.CASCADE,
         related_name="pending_requests",
-        verbose_name="Teacher name",
+        null=True, blank=True
     )
-    withdraw_type = models.CharField(max_length=255)
-    session_availability = models.CharField(max_length=255, verbose_name="Session availability")
-    accept = models.BooleanField(default=False)
-    cancel = models.BooleanField(default=False)
+    request_type = models.CharField(max_length=50, choices=RequestType.choices, default=RequestType.SESSION_CANCELLATION)
+    details = models.CharField(max_length=255, default="", help_text="e.g. Monday 09:00 AM")
+    status = models.CharField(max_length=20, choices=RequestStatus.choices, default=RequestStatus.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -108,7 +118,8 @@ class PendingRequest(models.Model):
         verbose_name_plural = "Pending Requests"
 
     def __str__(self):
-        return f"{self.teacher_name} - {self.withdraw_type}"
+        teacher_name = self.teacher.name if self.teacher else "Unknown Teacher"
+        return f"{teacher_name} - {self.request_type} ({self.status})"
 
 
 class GeneralInfo(models.Model):

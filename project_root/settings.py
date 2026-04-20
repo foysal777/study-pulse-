@@ -52,6 +52,98 @@ UNFOLD = {
     "SITE_HEADER": "Study Pulse",
     "SITE_SUBHEADER": "Management Dashboard",
     "SITE_SYMBOL": "dashboard",
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": True,
+        "navigation": [
+            {
+                "title": "General",
+                "items": [
+                    {
+                        "title": "Dashboard",
+                        "icon": "dashboard",
+                        "link": "/admin/",
+                    },
+                    {
+                        "title": "Pending Requests",
+                        "icon": "notifications",
+                        "link": "/admin/teachers/pendingrequest/",
+                        "badge": "teachers.utils.get_pending_requests_count",
+                    },
+                ],
+            },
+            {
+                "title": "Accounts",
+                "items": [
+                    {
+                        "title": "Users",
+                        "icon": "group",
+                        "link": "/admin/accounts/user/",
+                    },
+                    {
+                        "title": "One Time Passwords",
+                        "icon": "vpn_key",
+                        "link": "/admin/accounts/onetimepassword/",
+                    },
+                ],
+            },
+            {
+                "title": "Students",
+                "items": [
+                    {
+                        "title": "Student Profiles",
+                        "icon": "person",
+                        "link": "/admin/students/studentprofile/",
+                    },
+                    {
+                        "title": "Assessment Templates",
+                        "icon": "assignment",
+                        "link": "/admin/students/assessmenttemplate/",
+                    },
+                    {
+                        "title": "Student Assessment Attempts",
+                        "icon": "history_edu",
+                        "link": "/admin/students/studentassessmentattempt/",
+                    },
+                    {
+                        "title": "Interest Summaries",
+                        "icon": "auto_awesome",
+                        "link": "/admin/students/interestsummary/",
+                    },
+                ],
+            },
+            {
+                "title": "Teachers",
+                "items": [
+                    {
+                        "title": "Teacher Profiles",
+                        "icon": "badge",
+                        "link": "/admin/teachers/teacherprofile/",
+                    },
+                    {
+                        "title": "Teacher Availabilities",
+                        "icon": "event_available",
+                        "link": "/admin/teachers/teacheravailability/",
+                    },
+                    {
+                        "title": "Teacher Slots",
+                        "icon": "schedule",
+                        "link": "/admin/teachers/teacherslot/",
+                    },
+                    {
+                        "title": "Student Bookings",
+                        "icon": "book_online",
+                        "link": "/admin/teachers/studentbooking/",
+                    },
+                    {
+                        "title": "Teachers Locations",
+                        "icon": "location_on",
+                        "link": "/admin/teachers/teacherslocation/",
+                    },
+                ],
+            },
+        ],
+    },
 }
 
 SPECTACULAR_SETTINGS = {
@@ -90,6 +182,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'teachers.context_processors.pending_requests_count',
             ],
         },
     },

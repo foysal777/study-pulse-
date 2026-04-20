@@ -5,7 +5,8 @@ from teachers.models import (
     TeacherAvailability,
     TeacherSlot,
     StudentBooking,
-    StudentBooking,
+    PendingRequest,
+    RequestType,
     SlotMode,
     SessionList,
 )
@@ -131,3 +132,22 @@ class TeacherFeedbackSerializer(serializers.ModelSerializer):
             "marks": {"required": True},
             "feedback": {"required": True},
         }
+
+
+class PendingRequestSerializer(serializers.ModelSerializer):
+    teacher_name = serializers.CharField(source="teacher.name", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    request_type_display = serializers.CharField(source="get_request_type_display", read_only=True)
+
+    class Meta:
+        model = PendingRequest
+        fields = [
+            "id", "teacher_name", "request_type", "request_type_display",
+            "details", "status", "status_display", "created_at"
+        ]
+
+
+class CancellationRequestSubmitSerializer(serializers.Serializer):
+    request_type = serializers.ChoiceField(choices=RequestType.choices)
+    details = serializers.CharField(max_length=255, required=False)
+    slot_id = serializers.IntegerField(required=False, help_text="ID of the slot to cancel")

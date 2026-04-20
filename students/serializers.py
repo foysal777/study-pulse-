@@ -186,3 +186,21 @@ class AssessmentResultSuccessResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField(default=True)
     message = serializers.CharField()
     data = AssessmentResultDataSerializer()
+
+
+class StudentDashboardProgressSerializer(serializers.Serializer):
+    test_name = serializers.CharField()
+    percentage = serializers.CharField()
+
+
+class StudentDashboardDataSerializer(serializers.Serializer):
+    student_name = serializers.CharField()
+    profile_picture = serializers.ImageField()
+    upcoming_session = serializers.JSONField(required=False, allow_null=True)
+    my_progress = StudentDashboardProgressSerializer(many=True)
+
+
+class StudentDashboardSuccessResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(default=True)
+    message = serializers.CharField()
+    data = StudentDashboardDataSerializer()

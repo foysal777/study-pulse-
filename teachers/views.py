@@ -20,12 +20,17 @@ from teachers.serializers import (
     TeacherBookedSlotSerializer,
     TeacherStudentListSerializer,
     TeacherFeedbackSerializer,
+    PendingRequestSerializer,
+    CancellationRequestSubmitSerializer,
 )
 from teachers.models import (
     TeacherAvailability,
     TeacherSlot,
     StudentBooking,
     SlotMode,
+    PendingRequest,
+    RequestStatus,
+    RequestType,
 )
 from django.db import transaction
 from django.db.models import F, Sum, Min
@@ -472,3 +477,94 @@ def teacher_student_feedback(request, booking_id):
         serializer.save()
         return success_response(TeacherStudentListSerializer(booking).data, message="Feedback submitted successfully.")
     return error_response("Invalid data.", errors=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    methods=["POST"],
+    tags=["Teachers Requests"],
+    operation_id="teachers_request_cancellation",
+    request=CancellationRequestSubmitSerializer,
+    responses={201: PendingRequestSerializer},
+    description="Teacher submits a cancellation request (Session or Availability).",
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def teacher_request_cancellation(request):
+    if request.user.role != UserRole.TEACHER:
+        return error_response("Only teachers can submit requests.", status_code=status.HTTP_403_FORBIDDEN)
+
+    try:
+        profile = TeacherProfile.objects.get(user=request.user)
+    except TeacherProfile.DoesNotExist:
+        return error_response("Teacher profile not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+    serializer = CancellationRequestSubmitSerializer(data=request.data)
+    if serializer.is_valid():
+        details = serializer.validated_data.get("details", "")
+        slot_id = serializer.validated_data.get("slot_id")
+        
+        # If slot_id is provided, fetch slot details automatically
+        if slot_id:
+            try:
+                slot = TeacherSlot.objects.get(id=slot_id, teacher_availability__teacher=profile)
+                day = slot.teacher_availability.day
+                start_time = slot.start_time.strftime("%I:%M %p")
+                details = f"{day} {start_time}"
+            except TeacherSlot.DoesNotExist:
+                return error_response("Slot not found or does not belong to you.", status_code=status.HTTP_404_NOT_FOUND)
+
+        if not details:
+            return error_response("Details or Slot ID is required.", status_code=status.HTTP_400_BAD_REQUEST)
+
+        pending_request = PendingRequest.objects.create(
+            teacher=profile,
+            request_type=serializer.validated_data["request_type"],
+            details=details,
+            status=RequestStatus.PENDING
+        )
+        return success_response(
+            PendingRequestSerializer(pending_request).data,
+            message="Cancellation request submitted successfully.",
+            status_code=status.HTTP_201_CREATED
+        )
+    return error_response("Invalid data.", errors=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    methods=["GET"],
+    tags=["Teachers Requests"],
+    operation_id="teachers_pending_requests_list",
+    responses={200: PendingRequestSerializer(many=True)},
+    description="Fetch the list of cancellation requests for the logged-in teacher.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def teacher_pending_requests(request):
+    if request.user.role != UserRole.TEACHER:
+        return error_response("Only teachers can access this endpoint.", status_code=status.HTTP_403_FORBIDDEN)
+
+    try:
+        profile = TeacherProfile.objects.get(user=request.user)
+    except TeacherProfile.DoesNotExist:
+        return error_response("Teacher profile not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+    requests = PendingRequest.objects.filter(teacher=profile).order_by("-created_at")
+    serializer = PendingRequestSerializer(requests, many=True)
+    return success_response(serializer.data, message="Pending requests fetched successfully.")
+
+
+@extend_schema(
+    methods=["GET"],
+    tags=["Admin Notification"],
+    operation_id="admin_notification_count",
+    responses={200: OpenApiResponse(description="Count of pending requests.")},
+    description="Fetch the count of pending requests for the admin notification icon.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def admin_notification_count(request):
+    if request.user.role != UserRole.ADMIN:
+        return error_response("Only admins can access this endpoint.", status_code=status.HTTP_403_FORBIDDEN)
+
+    count = PendingRequest.objects.filter(status=RequestStatus.PENDING).count()
+    return success_response({"count": count}, message="Notification count fetched successfully.")

@@ -5,6 +5,7 @@ from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin
+from unfold.decorators import display
 
 from teachers.models import (
     GeneralInfo, PendingRequest, SessionList, Teacher, TeacherLevel,
@@ -493,29 +494,47 @@ class PendingRequestStatusFilter(admin.SimpleListFilter):
 @admin.register(PendingRequest)
 class PendingRequestAdmin(PlaceholderAdminMixin, ModelAdmin):
     change_form_template = "admin/teachers/pendingrequest/change_form.html"
+    @display(description="Status", label={
+        "pending": "warning",
+        "approved": "success",
+        "cancelled": "danger",
+    })
+    def status_display(self, obj):
+        return obj.get_status_display()
+
+    @display(description="Actions")
+    def actions_menu(self, obj):
+        from django.urls import reverse
+        from django.utils.html import format_html
+        
+        edit_url = reverse("admin:teachers_pendingrequest_change", args=[obj.pk])
+        delete_url = reverse("admin:teachers_pendingrequest_delete", args=[obj.pk])
+        
+        return format_html(
+            '<div class="flex items-center gap-2">'
+            '<a href="{}" class="text-blue-600 hover:text-blue-800"><span class="material-symbols-outlined">edit</span></a>'
+            '<a href="{}" class="text-red-600 hover:text-red-800"><span class="material-symbols-outlined">delete</span></a>'
+            '</div>',
+            edit_url, delete_url
+        )
+
     list_display = (
         "id",
-        "teacher_name",
-        "withdraw_type",
-        "session_availability",
-        "status_badge",
+        "teacher",
+        "request_type",
+        "details",
+        "status_display",
         "actions_menu",
+        "created_at",
     )
-    list_filter = (PendingRequestStatusFilter, "teacher_name")
-    search_fields = ("teacher_name__name", "withdraw_type", "session_availability")
-    autocomplete_fields = ("teacher_name",)
-    readonly_fields = ("status_badge",)
+    list_filter = ("status", "request_type", "teacher")
+    search_fields = ("teacher__name", "details")
+    autocomplete_fields = ("teacher",)
     fieldsets = (
         (
             None,
             {
-                "fields": ("teacher_name", "withdraw_type", "session_availability"),
-            },
-        ),
-        (
-            "Action",
-            {
-                "fields": ("status_badge", "accept", "cancel"),
+                "fields": ("teacher", "request_type", "details", "status"),
             },
         ),
     )
@@ -532,6 +551,7 @@ class PendingRequestAdmin(PlaceholderAdminMixin, ModelAdmin):
         return custom_urls + urls
 
     def set_status_view(self, request, object_id, status):
+        from teachers.models import RequestStatus
         if request.method != "POST":
             return JsonResponse({"ok": False, "error": "Method not allowed."}, status=405)
 
@@ -542,25 +562,19 @@ class PendingRequestAdmin(PlaceholderAdminMixin, ModelAdmin):
             return JsonResponse({"ok": False, "error": "Permission denied."}, status=403)
 
         if status == "accepted":
-            obj.accept = True
-            obj.cancel = False
-            status_label = "Accepted"
+            obj.status = RequestStatus.APPROVED
+            status_label = "Approved"
         elif status == "rejected":
-            obj.accept = False
-            obj.cancel = True
-            status_label = "Rejected"
+            obj.status = RequestStatus.CANCELLED
+            status_label = "Cancelled"
         else:
             return JsonResponse({"ok": False, "error": "Invalid status."}, status=400)
 
-        obj.save(update_fields=["accept", "cancel", "updated_at"])
+        obj.save(update_fields=["status", "updated_at"])
         return JsonResponse({"ok": True, "status": status_label})
 
     def _status_text(self, obj):
-        if obj.accept and not obj.cancel:
-            return "Accepted"
-        if obj.cancel and not obj.accept:
-            return "Rejected"
-        return "Pending"
+        return obj.get_status_display()
 
     def status_badge(self, obj):
         status = self._status_text(obj)

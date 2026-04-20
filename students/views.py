@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 from decimal import Decimal, ROUND_HALF_UP
 from drf_spectacular.utils import OpenApiResponse, extend_schema
@@ -14,6 +15,9 @@ from students.models import (
     StudentAssessmentAttempt, StudentAssessmentAnswer,
     AssessmentAttemptStatus, AssessmentLevelBand
 )
+from teachers.models import (
+    StudentBooking, TeacherSlot
+)
 from students.serializers import (
     StudentErrorResponseSerializer,
     StudentInterestOptionsSuccessResponseSerializer,
@@ -25,7 +29,9 @@ from students.serializers import (
     AssessmentTemplateListSuccessResponseSerializer,
     ExamSubmitRequestSerializer,
     AssessmentResultSuccessResponseSerializer,
+    StudentDashboardSuccessResponseSerializer,
 )
+from teachers.models import StudentBooking
 
 
 def _get_core_reasons_options():
@@ -405,3 +411,92 @@ def assessment_submit(request, template_id):
         "skill_scores": skill_scores,
     }
     return success_response(result, message="Exam submitted and evaluated successfully.")
+
+
+@extend_schema(
+    tags=["Students Dashboard"],
+    operation_id="students_dashboard",
+    responses={200: StudentDashboardSuccessResponseSerializer},
+    description="Fetch student dashboard data: profile, upcoming session, and progress.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def student_dashboard(request):
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Only student users can access this endpoint.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    profile, _ = StudentProfile.objects.get_or_create(student=request.user)
+    
+    # 1. Student Info
+    student_name = profile.student_name if profile.student_name else request.user.full_name
+    
+    # 2. Upcoming Session
+    now = timezone.now()
+    upcoming_booking = StudentBooking.objects.filter(
+        student=request.user,
+        slot__date__gte=now.date()
+    ).order_by("slot__date", "slot__start_time").first()
+    
+    upcoming_session = None
+    if upcoming_booking:
+        slot = upcoming_booking.slot
+        upcoming_session = {
+            "title": "English Lesson",
+            "date": slot.date.strftime("%a, %b %d"),
+            "time": slot.start_time.strftime("%I:%M %p"),
+            "mode": slot.mode,
+            "meeting_link": slot.accessible_meeting_link,
+        }
+
+    # 3. My Progress (Bookings with marks)
+    bookings_with_marks = StudentBooking.objects.filter(
+        student=request.user,
+        marks__isnull=False
+    ).order_by("booked_at")
+    
+    my_progress = []
+    for i, b in enumerate(bookings_with_marks):
+        my_progress.append({
+            "test_name": f"Progress test {i + 1}",
+            "percentage": f"{b.marks}%"
+        })
+
+    payload = {
+        "student_name": student_name,
+        "profile_picture": request.build_absolute_uri(profile.profile_picture.url) if profile.profile_picture else None,
+        "upcoming_session": upcoming_session,
+        "my_progress": my_progress,
+    }
+    
+    return success_response(payload, message="Dashboard data fetched successfully.")
+
+
+@extend_schema(
+    methods=["POST"],
+    tags=["Students Booking"],
+    operation_id="students_cancel_booking",
+    responses={200: OpenApiResponse(description="Booking cancelled successfully.")},
+    description="Cancel a student booking. Atomically decrements the booked_students count.",
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def cancel_booking(request, booking_id):
+    try:
+        with transaction.atomic():
+            booking = StudentBooking.objects.select_related("slot").get(id=booking_id, student=request.user)
+            slot = booking.slot
+            
+            # Decrement booked_students
+            TeacherSlot.objects.filter(pk=slot.pk).update(booked_students=F("booked_students") - 1)
+            
+            # Delete booking
+            booking.delete()
+            
+            return success_response(message="Booking cancelled successfully.")
+    except StudentBooking.DoesNotExist:
+        return error_response("Booking not found.", status_code=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return error_response(f"Cancellation failed: {str(e)}", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
