@@ -423,8 +423,12 @@ def teacher_booked_sessions(request):
     except TeacherProfile.DoesNotExist:
         return error_response("Teacher profile not found.", status_code=status.HTTP_404_NOT_FOUND)
 
-    # Filter slots with bookings
-    slots = TeacherSlot.objects.filter(teacher=profile, booked_students__gt=0).order_by("-date", "-start_time")
+    # Filter slots that have at least one booking without feedback
+    slots = TeacherSlot.objects.filter(
+        teacher=profile,
+        bookings__marks__isnull=True,
+        bookings__feedback__isnull=True
+    ).distinct().order_by("-date", "-start_time")
     
     serializer = TeacherBookedSlotSerializer(slots, many=True)
     return success_response(serializer.data, message="Booked sessions fetched successfully.")
@@ -448,7 +452,8 @@ def teacher_slot_students(request, slot_id):
     except TeacherSlot.DoesNotExist:
         return error_response("Slot not found or you don't have access to it.", status_code=status.HTTP_404_NOT_FOUND)
 
-    bookings = slot.bookings.all().select_related("student")
+    # Show only students who haven't received feedback yet
+    bookings = slot.bookings.filter(marks__isnull=True, feedback__isnull=True).select_related("student")
     serializer = TeacherStudentListSerializer(bookings, many=True)
     return success_response(serializer.data, message="Student list fetched successfully.")
 
@@ -506,10 +511,10 @@ def teacher_request_cancellation(request):
         # If slot_id is provided, fetch slot details automatically
         if slot_id:
             try:
-                slot = TeacherSlot.objects.get(id=slot_id, teacher_availability__teacher=profile)
-                day = slot.teacher_availability.day
-                start_time = slot.start_time.strftime("%I:%M %p")
-                details = f"{day} {start_time}"
+                slot = TeacherSlot.objects.get(id=slot_id, teacher=profile)
+                date_str = slot.date.strftime("%Y-%m-%d")
+                start_time_str = slot.start_time.strftime("%I:%M %p")
+                details = f"{date_str} {start_time_str}"
             except TeacherSlot.DoesNotExist:
                 return error_response("Slot not found or does not belong to you.", status_code=status.HTTP_404_NOT_FOUND)
 
