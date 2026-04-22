@@ -151,3 +151,8 @@ class CancellationRequestSubmitSerializer(serializers.Serializer):
     request_type = serializers.ChoiceField(choices=RequestType.choices)
     details = serializers.CharField(max_length=255, required=False)
     slot_id = serializers.IntegerField(required=False, help_text="ID of the slot to cancel")
+
+
+class SessionNoticeSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=255)
+    body = serializers.CharField()

@@ -26,6 +26,7 @@ from accounts.serializers import (
     UserSerializer,
     MeSuccessResponseSerializer,
     OtpVerifiedSuccessResponseSerializer,
+    PushTokenUpdateSerializer,
 )
 from accounts.utils import issue_and_send_otp
 from common.responses import created_response, error_response, success_response
@@ -160,6 +161,7 @@ def verify_sign_up_otp(request):
         {
             "user": UserSerializer(user).data,
             "tokens": _build_tokens_for_user(user),
+            "is_profile_completed": user.is_profile_completed,
         },
         message="Account verified successfully.",
     )
@@ -200,6 +202,7 @@ def sign_in(request):
         {
             "user": UserSerializer(user).data,
             "tokens": _build_tokens_for_user(user),
+            "is_profile_completed": user.is_profile_completed,
         },
         message="Sign in completed successfully.",
     )
@@ -378,3 +381,27 @@ def forgot_password_reset(request):
         cache.delete(_forgot_password_verified_cache_key(user.email))
 
     return success_response(message="Password reset successfully.")
+
+
+@extend_schema(
+    tags=["Accounts Authentication"],
+    operation_id="accounts_update_push_token",
+    request=PushTokenUpdateSerializer,
+    responses={
+        200: SuccessMessageResponseSerializer,
+        401: OpenApiResponse(response=ErrorResponseSerializer, description="Unauthenticated."),
+    },
+    description="Update the user's Expo push token.",
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def update_push_token(request):
+    serializer = PushTokenUpdateSerializer(data=request.data)
+    if not serializer.is_valid():
+        return error_response("Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    user = request.user
+    user.expo_push_token = serializer.validated_data["expo_push_token"]
+    user.save(update_fields=["expo_push_token", "updated_at"])
+
+    return success_response(message="Push token updated successfully.")

@@ -30,7 +30,6 @@ def error_response(
     payload: Dict[str, Any] = {
         "success": False,
         "message": message,
+        "errors": errors,
     }
-    if errors is not None:
-        payload["errors"] = errors
     return Response(payload, status=status_code)

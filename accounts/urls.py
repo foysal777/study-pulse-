@@ -13,6 +13,7 @@ urlpatterns = [
     path("forgot-password/reset/", views.forgot_password_reset, name="forgot_password_reset"),
     path("resend-otp/", views.resend_otp, name="resend_otp"),
     path("refresh-token/", views.refresh_token, name="refresh_token"),
+    path("update-push-token/", views.update_push_token, name="update_push_token"),
     path("me/", views.me, name="me"),
 ]
 

@@ -17,4 +17,5 @@ urlpatterns = [
     path("request-cancellation/", views.teacher_request_cancellation, name="teacher_request_cancellation"),
     path("pending-requests/", views.teacher_pending_requests, name="teacher_pending_requests"),
     path("admin-notification-count/", views.admin_notification_count, name="admin_notification_count"),
+    path("slots/<int:slot_id>/send-notice/", views.teacher_send_session_notice, name="teacher_send_session_notice"),
 ]

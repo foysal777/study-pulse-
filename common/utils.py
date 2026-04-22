@@ -15,6 +15,59 @@ def bool_to_yes_no(value: bool) -> str:
     return "yes" if value else "no"
 
 
+import requests
+
+
+def send_expo_push_notification(push_tokens, title, body, data=None):
+    """
+    Send push notifications using Expo's Push API.
+    push_tokens: List of strings or a single string
+    title: String
+    body: String
+    data: Optional dict
+    """
+    if not push_tokens:
+        return None
+    
+    if isinstance(push_tokens, str):
+        push_tokens = [push_tokens]
+    
+    # Filter out empty or null tokens
+    push_tokens = [token for token in push_tokens if token]
+    if not push_tokens:
+        return None
+
+    url = "https://exp.host/--/api/v2/push/send"
+    
+    messages = []
+    for token in push_tokens:
+        message = {
+            "to": token,
+            "title": title,
+            "body": body,
+        }
+        if data:
+            message["data"] = data
+        messages.append(message)
+
+    try:
+        response = requests.post(
+            url,
+            json=messages,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Accept-encoding": "gzip, deflate",
+            },
+            timeout=10
+        )
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        print(f"Error sending push notification: {e}")
+        return None
+
+
 def use_success(data=None, message="Success"):
     return success_response(data=data, message=message)
 

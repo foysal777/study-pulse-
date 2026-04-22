@@ -22,7 +22,9 @@ from teachers.serializers import (
     TeacherFeedbackSerializer,
     PendingRequestSerializer,
     CancellationRequestSubmitSerializer,
+    SessionNoticeSerializer,
 )
+from common.utils import send_expo_push_notification
 from teachers.models import (
     TeacherAvailability,
     TeacherSlot,
@@ -98,6 +100,8 @@ def teacher_profile(request):
         serializer = TeacherProfileSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save(user=request.user)
+            request.user.is_profile_completed = True
+            request.user.save(update_fields=["is_profile_completed", "updated_at"])
             return success_response(serializer.data, message="Profile created successfully.", status_code=status.HTTP_201_CREATED)
         return error_response("Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
@@ -107,6 +111,8 @@ def teacher_profile(request):
         serializer = TeacherProfileSerializer(profile, data=request.data, partial=True, context={"request": request})
         if serializer.is_valid():
             serializer.save()
+            request.user.is_profile_completed = True
+            request.user.save(update_fields=["is_profile_completed", "updated_at"])
             return success_response(serializer.data, message="Profile updated successfully.")
         return error_response("Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
@@ -573,3 +579,55 @@ def admin_notification_count(request):
 
     count = PendingRequest.objects.filter(status=RequestStatus.PENDING).count()
     return success_response({"count": count}, message="Notification count fetched successfully.")
+
+
+@extend_schema(
+    tags=["Teachers Sessions"],
+    operation_id="teachers_send_session_notice",
+    request=SessionNoticeSerializer,
+    responses={
+        200: OpenApiResponse(description="Notice sent successfully."),
+        400: OpenApiResponse(description="Validation error."),
+        403: OpenApiResponse(description="Permission denied."),
+        404: OpenApiResponse(description="Slot not found."),
+    },
+    description="Teacher sends a push notification to all students who have booked a specific slot.",
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def teacher_send_session_notice(request, slot_id):
+    if request.user.role != UserRole.TEACHER:
+        return error_response("Only teachers can send notices.", status_code=status.HTTP_403_FORBIDDEN)
+
+    try:
+        slot = TeacherSlot.objects.get(id=slot_id, teacher__user=request.user)
+    except TeacherSlot.DoesNotExist:
+        return error_response("Slot not found or you don't have access to it.", status_code=status.HTTP_404_NOT_FOUND)
+
+    serializer = SessionNoticeSerializer(data=request.data)
+    if not serializer.is_valid():
+        return error_response("Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    # Get all students who have booked this slot and have an expo_push_token
+    bookings = slot.bookings.select_related("student").filter(student__expo_push_token__isnull=False).exclude(student__expo_push_token="")
+    
+    push_tokens = [booking.student.expo_push_token for booking in bookings]
+    
+    if not push_tokens:
+        return success_response(message="No students with valid push tokens found for this session.")
+
+    title = serializer.validated_data["title"]
+    body = serializer.validated_data["body"]
+    
+    # Send push notifications
+    result = send_expo_push_notification(
+        push_tokens=push_tokens,
+        title=title,
+        body=body,
+        data={"slot_id": slot_id, "screen": "session_details"}
+    )
+
+    return success_response(
+        data={"expo_result": result},
+        message=f"Notice sent to {len(push_tokens)} students."
+    )

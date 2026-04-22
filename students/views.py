@@ -182,6 +182,9 @@ def profile_setup(request):
                     student=request.user,
                     interest_name=reason,
                 )
+        
+        request.user.is_profile_completed = True
+        request.user.save(update_fields=["is_profile_completed", "updated_at"])
 
     if request.method == "POST" and created:
         return success_response(

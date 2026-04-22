@@ -8,7 +8,11 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("id", "full_name", "email", "role", "is_email_verified")
+        fields = ("id", "full_name", "email", "role", "is_email_verified", "is_profile_completed", "expo_push_token")
+
+
+class PushTokenUpdateSerializer(serializers.Serializer):
+    expo_push_token = serializers.CharField(max_length=255)
 
 
 class SignUpSerializer(serializers.Serializer):
@@ -71,6 +75,7 @@ class SignUpResponseDataSerializer(serializers.Serializer):
 class OtpVerifiedResponseDataSerializer(serializers.Serializer):
     user = UserSerializer()
     tokens = AuthTokensSerializer()
+    is_profile_completed = serializers.BooleanField()
 
 
 class SuccessMessageResponseSerializer(serializers.Serializer):
