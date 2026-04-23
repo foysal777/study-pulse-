@@ -27,6 +27,7 @@ from accounts.serializers import (
     MeSuccessResponseSerializer,
     OtpVerifiedSuccessResponseSerializer,
     PushTokenUpdateSerializer,
+    AccountDeleteSerializer,
 )
 from accounts.utils import issue_and_send_otp
 from common.responses import created_response, error_response, success_response
@@ -405,3 +406,31 @@ def update_push_token(request):
     user.save(update_fields=["expo_push_token", "updated_at"])
 
     return success_response(message="Push token updated successfully.")
+
+
+@extend_schema(
+    tags=["Accounts Authentication"],
+    operation_id="accounts_delete_account",
+    request=AccountDeleteSerializer,
+    responses={
+        200: SuccessMessageResponseSerializer,
+        400: OpenApiResponse(response=ErrorResponseSerializer, description="Invalid password."),
+        401: OpenApiResponse(response=ErrorResponseSerializer, description="Unauthenticated."),
+    },
+    description="Delete the user's account after password verification.",
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def delete_account(request):
+    serializer = AccountDeleteSerializer(data=request.data)
+    if not serializer.is_valid():
+        return error_response("Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    user = request.user
+    password = serializer.validated_data["password"]
+
+    if not user.check_password(password):
+        return error_response("Invalid password. Account deletion failed.", status_code=status.HTTP_400_BAD_REQUEST)
+
+    user.delete()
+    return success_response(message="Account deleted successfully.")

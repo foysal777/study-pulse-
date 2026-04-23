@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'accounts',
     'students',
     'teachers',
+    'support',
     # framework 
     'rest_framework',
     "drf_spectacular",

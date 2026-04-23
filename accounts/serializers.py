@@ -151,3 +151,7 @@ class ForgotPasswordResetSerializer(serializers.Serializer):
         if attrs["new_password"] != attrs["confirm_password"]:
             raise serializers.ValidationError({"confirm_password": "Confirm password does not match new password."})
         return attrs
+
+
+class AccountDeleteSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True)

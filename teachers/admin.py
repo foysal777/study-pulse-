@@ -70,6 +70,12 @@ class TeacherProfileAdmin(PlaceholderAdminMixin, ModelAdmin):
     list_display = ("id", "name", "phone_number", "age", "gender", "created_at")
     search_fields = ("name", "phone_number")
     list_filter = ("gender",)
+    fields = (
+        "user", "name", "phone_number", "age", "gender", 
+        "qualification", "experience", "profile_picture", 
+        "teaching_medium", "courses_classes_taught", 
+        "other_courses_classes", "offline_location", "whatsapp_link"
+    )
 
 
 # @admin.register(TeacherLevel)
@@ -159,7 +165,7 @@ class SessionListAdmin(PlaceholderAdminMixin, ModelAdmin):
         "id",
         "teacher_name",
         "date_time",
-        "meeting_link",
+        "whatsapp_room_link",
         "number_of_students",
         "actions_menu",
     )
@@ -170,7 +176,7 @@ class SessionListAdmin(PlaceholderAdminMixin, ModelAdmin):
         (
             None,
             {
-                "fields": ("teacher_name", "date_time", "number_of_students", "meeting_link"),
+                "fields": ("teacher_name", "date_time", "number_of_students", "whatsapp_room_link"),
             },
         ),
         (
@@ -896,11 +902,11 @@ class TeacherAvailabilityAdmin(ModelAdmin):
 
 @admin.register(TeacherSlot)
 class TeacherSlotAdmin(ModelAdmin):
-    list_display = ("id", "teacher", "date", "start_time", "end_time", "mode", "booked_students", "max_students")
+    list_display = ("id", "teacher", "title", "date", "start_time", "end_time", "mode", "booked_students", "max_students")
     list_filter = ("date", "mode", "teacher")
-    search_fields = ("teacher__name", "date")
+    search_fields = ("teacher__name", "date", "title")
     autocomplete_fields = ("teacher",)
-    fields = ("teacher", "date", "start_time", "end_time", "mode", "max_students", "booked_students", "meeting_link")
+    fields = ("teacher", "title", "date", "start_time", "end_time", "mode", "max_students", "booked_students", "whatsapp_room_link", "teachers_curriculum")
 
 
 @admin.register(StudentBooking)

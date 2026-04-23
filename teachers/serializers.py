@@ -45,7 +45,7 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
             "id", "name", "phone_number", "age", "gender",
             "qualification", "experience", "profile_picture",
             "teaching_medium", "courses_classes_taught",
-            "other_courses_classes", "offline_location",
+            "other_courses_classes", "offline_location", "whatsapp_link",
             "created_at", "updated_at"
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
@@ -88,25 +88,25 @@ class StudentBookingSerializer(serializers.ModelSerializer):
 
 
 class SessionListSerializer(serializers.ModelSerializer):
-    meeting_link = serializers.ReadOnlyField(source='accessible_meeting_link')
+    whatsapp_room_link = serializers.ReadOnlyField(source='accessible_whatsapp_room_link')
 
     class Meta:
         model = SessionList
         fields = [
             "id", "teacher_name", "date_time", "number_of_students", 
-            "meeting_link", "send_notification", "cancel", "created_at"
+            "whatsapp_room_link", "send_notification", "cancel", "created_at"
         ]
         read_only_fields = ["id", "created_at"]
 
 
 class TeacherBookedSlotSerializer(serializers.ModelSerializer):
-    meeting_link = serializers.ReadOnlyField(source='accessible_meeting_link')
+    whatsapp_room_link = serializers.ReadOnlyField(source='accessible_whatsapp_room_link')
 
     class Meta:
         model = TeacherSlot
         fields = [
-            "id", "date", "start_time", "end_time", "mode", 
-            "booked_students", "max_students", "meeting_link"
+            "id", "title", "date", "start_time", "end_time", "mode", 
+            "booked_students", "max_students", "whatsapp_room_link", "teachers_curriculum"
         ]
 
 
@@ -150,9 +150,19 @@ class PendingRequestSerializer(serializers.ModelSerializer):
 class CancellationRequestSubmitSerializer(serializers.Serializer):
     request_type = serializers.ChoiceField(choices=RequestType.choices)
     details = serializers.CharField(max_length=255, required=False)
-    slot_id = serializers.IntegerField(required=False, help_text="ID of the slot to cancel")
+    slot_id = serializers.IntegerField(required=False, help_text="ID of the specific slot to cancel")
+    availability_id = serializers.IntegerField(required=False, help_text="ID of the weekly availability to withdraw")
 
 
 class SessionNoticeSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=255)
     body = serializers.CharField()
+
+
+class TeacherDashboardSerializer(serializers.Serializer):
+    teacher_name = serializers.CharField()
+    profile_picture = serializers.ImageField()
+    stats = serializers.DictField()
+    teacher_room = serializers.URLField()
+    curriculum = TeacherBookedSlotSerializer(many=True)
+    upcoming_sessions = TeacherBookedSlotSerializer(many=True)

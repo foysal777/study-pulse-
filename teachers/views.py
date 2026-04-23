@@ -23,6 +23,7 @@ from teachers.serializers import (
     PendingRequestSerializer,
     CancellationRequestSubmitSerializer,
     SessionNoticeSerializer,
+    TeacherDashboardSerializer,
 )
 from common.utils import send_expo_push_notification
 from teachers.models import (
@@ -189,6 +190,13 @@ def teacher_location(request):
 
 
 @extend_schema(
+    methods=["GET"],
+    tags=["Teachers Availability"],
+    operation_id="teachers_availability_list",
+    responses={200: TeacherAvailabilitySerializer(many=True)},
+    description="Fetch current teacher's weekly availability.",
+)
+@extend_schema(
     methods=["POST"],
     tags=["Teachers Availability"],
     operation_id="teachers_availability_create",
@@ -196,22 +204,28 @@ def teacher_location(request):
     responses={201: TeacherAvailabilitySerializer},
     description="Teacher sets their weekly availability. Example: Monday 09:00:00 to 10:00:00 ONLINE.",
 )
-@api_view(["POST"])
+@api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
-def teacher_add_availability(request):
+def teacher_availability(request):
     if request.user.role != UserRole.TEACHER:
-        return error_response("Only teachers can add availability.", status_code=status.HTTP_403_FORBIDDEN)
+        return error_response("Only teachers can access availability.", status_code=status.HTTP_403_FORBIDDEN)
 
     try:
         profile = TeacherProfile.objects.get(user=request.user)
     except TeacherProfile.DoesNotExist:
         return error_response("Teacher profile not found.", status_code=status.HTTP_404_NOT_FOUND)
 
-    serializer = TeacherAvailabilitySerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save(teacher=profile)
-        return success_response(serializer.data, message="Availability added successfully.", status_code=status.HTTP_201_CREATED)
-    return error_response("Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+    if request.method == "GET":
+        availabilities = TeacherAvailability.objects.filter(teacher=profile)
+        serializer = TeacherAvailabilitySerializer(availabilities, many=True)
+        return success_response(serializer.data, message="Availability fetched successfully.")
+
+    if request.method == "POST":
+        serializer = TeacherAvailabilitySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(teacher=profile)
+            return success_response(serializer.data, message="Availability added successfully.", status_code=status.HTTP_201_CREATED)
+        return error_response("Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(
@@ -511,34 +525,54 @@ def teacher_request_cancellation(request):
 
     serializer = CancellationRequestSubmitSerializer(data=request.data)
     if serializer.is_valid():
+        request_type = serializer.validated_data["request_type"]
         details = serializer.validated_data.get("details", "")
         slot_id = serializer.validated_data.get("slot_id")
+        availability_id = serializer.validated_data.get("availability_id")
         
-        # If slot_id is provided, fetch slot details automatically
-        if slot_id:
-            try:
-                slot = TeacherSlot.objects.get(id=slot_id, teacher=profile)
-                date_str = slot.date.strftime("%Y-%m-%d")
-                start_time_str = slot.start_time.strftime("%I:%M %p")
-                details = f"{date_str} {start_time_str}"
-            except TeacherSlot.DoesNotExist:
-                return error_response("Slot not found or does not belong to you.", status_code=status.HTTP_404_NOT_FOUND)
+        slot_obj = None
+        avail_obj = None
 
-        if not details:
-            return error_response("Details or Slot ID is required.", status_code=status.HTTP_400_BAD_REQUEST)
+        # 1. Handle Session Cancellation
+        if request_type == RequestType.SESSION_CANCELLATION:
+            if slot_id:
+                try:
+                    slot_obj = TeacherSlot.objects.get(id=slot_id, teacher=profile)
+                    date_str = slot_obj.date.strftime("%Y-%m-%d")
+                    start_time_str = slot_obj.start_time.strftime("%I:%M %p")
+                    details = f"Session: {slot_obj.title} on {date_str} at {start_time_str}"
+                except TeacherSlot.DoesNotExist:
+                    return error_response("Slot not found or does not belong to you.", status_code=status.HTTP_404_NOT_FOUND)
+            elif not details:
+                return error_response("Slot ID or specific details are required for session cancellation.", status_code=status.HTTP_400_BAD_REQUEST)
+
+        # 2. Handle Availability Withdrawal
+        elif request_type == RequestType.AVAILABILITY_WITHDRAWAL:
+            if availability_id:
+                try:
+                    avail_obj = TeacherAvailability.objects.get(id=availability_id, teacher=profile)
+                    start_str = avail_obj.start_time.strftime("%I:%M %p")
+                    end_str = avail_obj.end_time.strftime("%I:%M %p")
+                    details = f"Availability: {avail_obj.day_of_week} ({start_str} - {end_str}) {avail_obj.mode.upper()}"
+                except TeacherAvailability.DoesNotExist:
+                    return error_response("Availability record not found or does not belong to you.", status_code=status.HTTP_404_NOT_FOUND)
+            elif not details:
+                return error_response("Availability ID or specific details are required for withdrawal.", status_code=status.HTTP_400_BAD_REQUEST)
 
         pending_request = PendingRequest.objects.create(
             teacher=profile,
-            request_type=serializer.validated_data["request_type"],
+            request_type=request_type,
             details=details,
+            slot=slot_obj,
+            availability=avail_obj,
             status=RequestStatus.PENDING
         )
         return success_response(
             PendingRequestSerializer(pending_request).data,
-            message="Cancellation request submitted successfully.",
+            message="Request submitted successfully.",
             status_code=status.HTTP_201_CREATED
         )
-    return error_response("Invalid data.", errors=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
+    return error_response("Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(
@@ -631,3 +665,63 @@ def teacher_send_session_notice(request, slot_id):
         data={"expo_result": result},
         message=f"Notice sent to {len(push_tokens)} students."
     )
+
+
+@extend_schema(
+    tags=["Teachers Dashboard"],
+    operation_id="teachers_dashboard",
+    responses={200: TeacherDashboardSerializer},
+    description="Fetch teacher dashboard data: stats, curriculum, and upcoming sessions.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def teacher_dashboard(request):
+    if request.user.role != UserRole.TEACHER:
+        return error_response("Only teachers can access the dashboard.", status_code=status.HTTP_403_FORBIDDEN)
+
+    try:
+        profile = TeacherProfile.objects.get(user=request.user)
+    except TeacherProfile.DoesNotExist:
+        return error_response("Teacher profile not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+    now = timezone.now()
+    today = now.date()
+    seven_days_ago = today - timedelta(days=7)
+
+    # 1. Today's sessions count
+    today_sessions_count = TeacherSlot.objects.filter(teacher=profile, date=today).count()
+
+    # 2. Last 7 days sessions count
+    week_sessions_count = TeacherSlot.objects.filter(
+        teacher=profile, 
+        date__gte=seven_days_ago, 
+        date__lt=today
+    ).count()
+
+    # 3. Total students (unique students booked in their slots)
+    total_students = StudentBooking.objects.filter(slot__teacher=profile).values("student").distinct().count()
+
+    # 4. Curriculum list (Sessions with curriculum)
+    # Showing slots that have a curriculum uploaded
+    curriculum_slots = TeacherSlot.objects.filter(teacher=profile, curriculum__isnull=False).exclude(curriculum="").order_by("-date")
+
+    # 5. Upcoming sessions
+    upcoming_sessions = TeacherSlot.objects.filter(
+        teacher=profile, 
+        date__gte=today
+    ).order_by("date", "start_time")[:5]
+
+    payload = {
+        "teacher_name": profile.name,
+        "profile_picture": request.build_absolute_uri(profile.profile_picture.url) if profile.profile_picture else None,
+        "stats": {
+            "today": today_sessions_count,
+            "week": week_sessions_count,
+            "students": total_students,
+        },
+        "teacher_room": profile.whatsapp_link,
+        "curriculum": TeacherBookedSlotSerializer(curriculum_slots, many=True, context={"request": request}).data,
+        "upcoming_sessions": TeacherBookedSlotSerializer(upcoming_sessions, many=True, context={"request": request}).data,
+    }
+
+    return success_response(payload, message="Teacher dashboard data fetched successfully.")

@@ -61,22 +61,22 @@ class SessionList(models.Model):
     )
     date_time = models.DateTimeField()
     number_of_students = models.PositiveIntegerField()
-    meeting_link = models.URLField(blank=True, null=True, verbose_name="Meeting Link")
+    whatsapp_room_link = models.URLField(blank=True, null=True, verbose_name="WhatsApp Room Link")
     send_notification = models.TextField(blank=True, verbose_name="Send notification")
     cancel = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     @property
-    def accessible_meeting_link(self):
-        if not self.meeting_link:
+    def accessible_whatsapp_room_link(self):
+        if not self.whatsapp_room_link:
             return None
         
         # 5 minutes before the session starts
         visibility_time = self.date_time - timedelta(minutes=5)
         
         if timezone.now() >= visibility_time:
-            return self.meeting_link
+            return self.whatsapp_room_link
         return None
 
     class Meta:
@@ -109,6 +109,8 @@ class PendingRequest(models.Model):
     request_type = models.CharField(max_length=50, choices=RequestType.choices, default=RequestType.SESSION_CANCELLATION)
     details = models.CharField(max_length=255, default="", help_text="e.g. Monday 09:00 AM")
     status = models.CharField(max_length=20, choices=RequestStatus.choices, default=RequestStatus.PENDING)
+    slot = models.ForeignKey("TeacherSlot", on_delete=models.SET_NULL, null=True, blank=True, related_name="cancellation_requests")
+    availability = models.ForeignKey("TeacherAvailability", on_delete=models.SET_NULL, null=True, blank=True, related_name="withdrawal_requests")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -120,6 +122,19 @@ class PendingRequest(models.Model):
     def __str__(self):
         teacher_name = self.teacher.name if self.teacher else "Unknown Teacher"
         return f"{teacher_name} - {self.request_type} ({self.status})"
+
+    def save(self, *args, **kwargs):
+        # Check if status is being changed to APPROVED
+        if self.pk:
+            old_instance = PendingRequest.objects.get(pk=self.pk)
+            if old_instance.status != RequestStatus.APPROVED and self.status == RequestStatus.APPROVED:
+                # Automate removal
+                if self.request_type == RequestType.SESSION_CANCELLATION and self.slot:
+                    self.slot.delete()
+                elif self.request_type == RequestType.AVAILABILITY_WITHDRAWAL and self.availability:
+                    self.availability.delete()
+        
+        super().save(*args, **kwargs)
 
 
 class GeneralInfo(models.Model):
@@ -172,6 +187,7 @@ class TeacherProfile(models.Model):
     courses_classes_taught = models.CharField(max_length=255, blank=True, null=True)
     other_courses_classes = models.TextField(blank=True, null=True)
     offline_location = models.TextField(blank=True, null=True)
+    whatsapp_link = models.URLField(blank=True, null=True, help_text="WhatsApp group link for teacher's room")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -246,11 +262,14 @@ class TeacherSlot(models.Model):
     mode = models.CharField(max_length=10, choices=SlotMode.choices)
     max_students = models.PositiveIntegerField(default=40)
     booked_students = models.PositiveIntegerField(default=0)
-    meeting_link = models.URLField(blank=True, null=True, verbose_name="Meeting Link")
+    whatsapp_room_link = models.URLField(blank=True, null=True, verbose_name="WhatsApp Room Link")
+    title = models.CharField(max_length=255, default="General Class")
+    teachers_curriculum = models.FileField(upload_to="curriculums/", blank=True, null=True)
 
     @property
-    def accessible_meeting_link(self):
-        if not self.meeting_link:
+    def accessible_whatsapp_room_link(self):
+        from datetime import datetime
+        if not self.whatsapp_room_link:
             return None
         
         # 5 minutes before the session starts
@@ -259,7 +278,7 @@ class TeacherSlot(models.Model):
         visibility_time = session_start - timedelta(minutes=5)
         
         if timezone.now() >= visibility_time:
-            return self.meeting_link
+            return self.whatsapp_room_link
         return None
 
     class Meta:

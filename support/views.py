@@ -1,0 +1,37 @@
+from drf_spectacular.utils import extend_schema
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from common.responses import success_response, error_response
+from support.models import Policy, HelpSupport
+from support.serializers import PolicySerializer, HelpSupportSerializer
+
+
+@extend_schema(
+    tags=["Support & Policies"],
+    operation_id="support_policy",
+    responses={200: PolicySerializer(many=True)},
+    description="Fetch app policies.",
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def policy_view(request):
+    policies = Policy.objects.all()
+    serializer = PolicySerializer(policies, many=True)
+    return success_response(serializer.data, message="Policies fetched successfully.")
+
+
+@extend_schema(
+    tags=["Support & Policies"],
+    operation_id="support_help_support",
+    responses={200: HelpSupportSerializer},
+    description="Fetch help and support contact info.",
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def help_support_view(request):
+    support = HelpSupport.objects.first()
+    if not support:
+        return error_response("Support info not configured.", status_code=status.HTTP_404_NOT_FOUND)
+    serializer = HelpSupportSerializer(support)
+    return success_response(serializer.data, message="Help & support info fetched successfully.")
