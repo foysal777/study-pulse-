@@ -16,6 +16,7 @@ from students.models import (
     StudentAssessmentAnswer,
     StudentAssessmentAttempt,
     StudentProfile,
+    StudentLocation,
 )
 
 
@@ -325,32 +326,51 @@ class StudentProfileAdmin(PlaceholderAdminMixin, ModelAdmin):
     list_display = (
         "id",
         "student",
+        "profile_picture_preview",
         "phone_number",
         "age",
         "gender",
+        "last_achieved_degree",
+        "parents_name",
+        "parents_phone_number",
         "updated_at",
     )
     search_fields = ("student__full_name", "student__email", "phone_number", "parents_phone_number")
     list_filter = ("gender", "updated_at")
     autocomplete_fields = ("student",)
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = ("profile_picture_preview", "created_at", "updated_at")
     fieldsets = (
         (
-            "Student Information",
+            "Student Account",
+            {
+                "fields": ("student",),
+            },
+        ),
+        (
+            "Basic Information",
             {
                 "fields": (
-                    "student",
+                    "student_name",
+                    "profile_picture",
+                    "profile_picture_preview",
                     "phone_number",
                     "age",
                     "gender",
                     "last_achieved_degree",
+                ),
+            },
+        ),
+        (
+            "Parent Information",
+            {
+                "fields": (
                     "parents_name",
                     "parents_phone_number",
                 ),
             },
         ),
         (
-            "Preferences",
+            "Study Preferences",
             {
                 "fields": (
                     "preferred_study_time",
@@ -366,6 +386,16 @@ class StudentProfileAdmin(PlaceholderAdminMixin, ModelAdmin):
             },
         ),
     )
+
+    def profile_picture_preview(self, obj):
+        if obj.profile_picture:
+            return format_html(
+                '<img src="{}" alt="Profile Picture" style="height:48px;width:48px;object-fit:cover;border-radius:50%;" />',
+                obj.profile_picture.url,
+            )
+        return "-"
+
+    profile_picture_preview.short_description = "Photo"
 
 
 class AssessmentSectionInline(admin.TabularInline):
@@ -560,3 +590,12 @@ class AssessmentLevelBandAdmin(PlaceholderAdminMixin, ModelAdmin):
     list_filter = ("template",)
     search_fields = ("label", "template__name")
     autocomplete_fields = ("template",)
+
+
+@admin.register(StudentLocation)
+class StudentLocationAdmin(PlaceholderAdminMixin, ModelAdmin):
+    list_display = ("id", "student", "latitude", "longitude", "updated_at")
+    search_fields = ("student__full_name", "student__email")
+    autocomplete_fields = ("student",)
+    readonly_fields = ("updated_at",)
+

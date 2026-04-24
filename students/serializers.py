@@ -1,14 +1,19 @@
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from students.models import AssessmentTemplate, AssessmentSection, AssessmentQuestion, AssessmentOption, StudentAssessmentAttempt
+from students.models import AssessmentTemplate, AssessmentSection, AssessmentQuestion, AssessmentOption, StudentAssessmentAttempt, StudentLocation
 
 
 class StudentProfileSetupUpsertSerializer(serializers.Serializer):
-    name = serializers.CharField(max_length=255, required=False)
-    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
-    age = serializers.IntegerField(required=False, allow_null=True, min_value=1, max_value=120)
+    name = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    age = serializers.IntegerField(required=False, allow_null=True, min_value=0, max_value=120)
     gender = serializers.CharField(max_length=20, required=False, allow_blank=True)
     last_achieved_degree = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    profile_picture = extend_schema_field(OpenApiTypes.BINARY)(
+        serializers.ImageField(required=False, allow_null=True)
+    )
     parents_name = serializers.CharField(max_length=255, required=False, allow_blank=True)
     parents_phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
     core_reasons_of_learning = serializers.ListField(
@@ -56,19 +61,21 @@ class StudentProfileSetupUpsertSerializer(serializers.Serializer):
 
 
 class StudentProfileSetupDataSerializer(serializers.Serializer):
-    name = serializers.CharField()
-    phone_number = serializers.CharField(allow_blank=True)
-    age = serializers.IntegerField(allow_null=True)
-    gender = serializers.CharField(allow_blank=True)
-    last_achieved_degree = serializers.CharField(allow_blank=True)
-    parents_name = serializers.CharField(allow_blank=True)
-    parents_phone_number = serializers.CharField(allow_blank=True)
-    core_reasons_of_learning = serializers.ListField(child=serializers.CharField())
-    preferred_study_time = serializers.ListField(child=serializers.CharField())
-    preferred_study_mode = serializers.ListField(child=serializers.CharField())
-    preferred_study_language = serializers.ListField(child=serializers.CharField())
-    core_reasons_options = serializers.ListField(child=serializers.CharField())
-    interest_options = serializers.ListField(child=serializers.CharField())
+    name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    phone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    age = serializers.IntegerField(required=False, allow_null=True)
+    gender = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    last_achieved_degree = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    profile_picture = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    parents_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    parents_phone_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    is_location = serializers.BooleanField(required=False, default=False)
+    core_reasons_of_learning = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    preferred_study_time = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    preferred_study_mode = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    preferred_study_language = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    core_reasons_options = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    interest_options = serializers.ListField(child=serializers.CharField(), required=False, default=list)
 
 
 class StudentProfileSetupSuccessResponseSerializer(serializers.Serializer):
@@ -204,3 +211,22 @@ class StudentDashboardSuccessResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField(default=True)
     message = serializers.CharField()
     data = StudentDashboardDataSerializer()
+
+
+# ─── Student Location Serializers ─────────────────────────────────────────────
+
+class StudentLocationUpsertSerializer(serializers.Serializer):
+    latitude = serializers.DecimalField(max_digits=20, decimal_places=15)
+    longitude = serializers.DecimalField(max_digits=20, decimal_places=15)
+
+
+class StudentLocationDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentLocation
+        fields = ["latitude", "longitude", "updated_at"]
+
+
+class StudentLocationSuccessResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(default=True)
+    message = serializers.CharField()
+    data = StudentLocationDataSerializer()

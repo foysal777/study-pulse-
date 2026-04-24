@@ -31,6 +31,7 @@ from accounts.serializers import (
 )
 from accounts.utils import issue_and_send_otp
 from common.responses import created_response, error_response, success_response
+from common.utils import send_expo_push_notification
 
 User = get_user_model()
 
@@ -197,6 +198,22 @@ def sign_in(request):
         return error_response(
             "Account is not verified yet. Please verify your email OTP first.",
             status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    # Recompute is_profile_completed from DB on every login
+    if user.role == "student":
+        from students.views import _compute_profile_completion
+        is_completed = _compute_profile_completion(user)
+        if user.is_profile_completed != is_completed:
+            user.is_profile_completed = is_completed
+            user.save(update_fields=["is_profile_completed", "updated_at"])
+
+    # Send push notification (silent fail — won't break login if it fails)
+    if user.expo_push_token:
+        send_expo_push_notification(
+            push_tokens=user.expo_push_token,
+            title="Login Successful 🎉",
+            body="Welcome back! You have logged in successfully.",
         )
 
     return success_response(

@@ -5,12 +5,14 @@ from decimal import Decimal, ROUND_HALF_UP
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 
 from accounts.models import UserRole
 from common.responses import error_response, success_response
+from common.utils import send_expo_push_notification
 from students.models import (
-    Intterest, StudentProfile, AssessmentTemplate,
+    Intterest, InterestSummary, StudentProfile, StudentLocation, AssessmentTemplate,
     AssessmentQuestion, AssessmentOption,
     StudentAssessmentAttempt, StudentAssessmentAnswer,
     AssessmentAttemptStatus, AssessmentLevelBand
@@ -30,33 +32,49 @@ from students.serializers import (
     ExamSubmitRequestSerializer,
     AssessmentResultSuccessResponseSerializer,
     StudentDashboardSuccessResponseSerializer,
+    StudentLocationUpsertSerializer,
+    StudentLocationSuccessResponseSerializer,
 )
 from teachers.models import StudentBooking
 
 
 def _get_core_reasons_options():
     return list(
-        Intterest.objects.order_by("interest_name")
+        InterestSummary.objects.order_by("interest_name")
         .values_list("interest_name", flat=True)
-        .distinct()
     )
 
 
-def _build_profile_setup_payload(user, profile):
+def _compute_profile_completion(user):
+    """is_profile_completed=True when required second-page fields are all filled."""
+    try:
+        profile = user.student_profile
+    except Exception:
+        return False
+
+    has_study_time = bool(profile.preferred_study_time)
+    has_study_mode = bool(profile.preferred_study_mode)
+    has_study_language = bool(profile.preferred_study_language)
+
+    return (
+        has_study_time and has_study_mode and has_study_language
+    )
+
+
+def _build_profile_setup_payload(request, user, profile):
     interest_options = _get_core_reasons_options()
     selected_reasons = list(
         Intterest.objects.filter(student=user)
         .order_by("interest_name")
         .values_list("interest_name", flat=True)
     )
+    has_location = StudentLocation.objects.filter(student=user).exists()
     return {
-        "name": user.full_name,
-        "phone_number": profile.phone_number,
-        "age": profile.age,
-        "gender": profile.gender,
         "last_achieved_degree": profile.last_achieved_degree,
+        "profile_picture": request.build_absolute_uri(profile.profile_picture.url) if profile.profile_picture else None,
         "parents_name": profile.parents_name,
         "parents_phone_number": profile.parents_phone_number,
+        "is_location": has_location,
         "core_reasons_of_learning": selected_reasons,
         "preferred_study_time": profile.preferred_study_time or [],
         "preferred_study_mode": profile.preferred_study_mode or [],
@@ -94,7 +112,37 @@ def interest_options(request):
 @extend_schema(
     tags=["Students Profile"],
     operation_id="students_profile_setup",
-    request=StudentProfileSetupUpsertSerializer,
+    request={
+        "multipart/form-data": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "phone": {"type": "string"},
+                "age": {"type": "integer"},
+                "gender": {"type": "string"},
+                "last_achieved_degree": {"type": "string"},
+                "profile_picture": {"type": "string", "format": "binary"},
+                "parents_name": {"type": "string"},
+                "parents_phone_number": {"type": "string"},
+                "core_reasons_of_learning": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
+                "preferred_study_time": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
+                "preferred_study_mode": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
+                "preferred_study_language": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
+            },
+        },
+    },
     responses={
         200: StudentProfileSetupSuccessResponseSerializer,
         201: StudentProfileSetupSuccessResponseSerializer,
@@ -105,6 +153,7 @@ def interest_options(request):
     description=(
         "Single endpoint for both profile setup pages. "
         "GET returns all profile setup data, POST/PUT/PATCH updates it. "
+        "Use multipart/form-data to upload profile_picture. "
         "core_reasons_of_learning is stored in Intterest model (interest_name)."
     ),
 )
@@ -121,7 +170,7 @@ def profile_setup(request):
 
     if request.method == "GET":
         return success_response(
-            _build_profile_setup_payload(request.user, profile),
+            _build_profile_setup_payload(request, request.user, profile),
             message="Profile setup data fetched successfully.",
         )
 
@@ -137,27 +186,20 @@ def profile_setup(request):
         )
 
     data = serializer.validated_data
-    if "core_reasons_of_learning" in data:
-        available_options = set(_get_core_reasons_options())
-        selected_reasons = data["core_reasons_of_learning"]
-        invalid_reasons = [reason for reason in selected_reasons if reason not in available_options]
-        if invalid_reasons:
-            return error_response(
-                "Invalid core reasons of learning. Pass exact values from backend options (case-sensitive).",
-                {
-                    "invalid_core_reasons_of_learning": invalid_reasons,
-                    "allowed_core_reasons_options": sorted(available_options),
-                },
-                status.HTTP_400_BAD_REQUEST,
-            )
+
 
     with transaction.atomic():
         if "name" in data:
             request.user.full_name = data["name"].strip()
             request.user.save(update_fields=["full_name", "updated_at"])
 
+        if "phone" in data:
+            profile.phone_number = data["phone"]
+
+        if "profile_picture" in data and data["profile_picture"] is not None:
+            profile.profile_picture = data["profile_picture"]
+
         profile_fields = (
-            "phone_number",
             "age",
             "gender",
             "last_achieved_degree",
@@ -183,18 +225,18 @@ def profile_setup(request):
                     interest_name=reason,
                 )
         
-        request.user.is_profile_completed = True
+        request.user.is_profile_completed = _compute_profile_completion(request.user)
         request.user.save(update_fields=["is_profile_completed", "updated_at"])
 
     if request.method == "POST" and created:
         return success_response(
-            _build_profile_setup_payload(request.user, profile),
+            _build_profile_setup_payload(request, request.user, profile),
             message="Profile setup created successfully.",
             status_code=status.HTTP_201_CREATED,
         )
 
     return success_response(
-        _build_profile_setup_payload(request.user, profile),
+        _build_profile_setup_payload(request, request.user, profile),
         message="Profile setup updated successfully.",
     )
 
@@ -413,6 +455,17 @@ def assessment_submit(request, template_id):
         "mapped_level": mapped_level,
         "skill_scores": skill_scores,
     }
+
+    if request.user.expo_push_token:
+        status_msg = "Passed 🎉" if is_passed else "Keep practicing 💪"
+        level_msg = f" (Level: {mapped_level})" if mapped_level else ""
+        
+        send_expo_push_notification(
+            push_tokens=request.user.expo_push_token,
+            title="Assessment Result Available",
+            body=f"You scored {overall_pct}% in {template.name}. {status_msg}{level_msg}"
+        )
+
     return success_response(result, message="Exam submitted and evaluated successfully.")
 
 
@@ -503,3 +556,50 @@ def cancel_booking(request, booking_id):
         return error_response("Booking not found.", status_code=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return error_response(f"Cancellation failed: {str(e)}", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@extend_schema(
+    tags=["Students Location"],
+    operation_id="students_update_location",
+    request=StudentLocationUpsertSerializer,
+    responses={
+        200: StudentLocationSuccessResponseSerializer,
+        400: OpenApiResponse(response=StudentErrorResponseSerializer, description="Validation error."),
+        401: OpenApiResponse(response=StudentErrorResponseSerializer, description="Authentication required."),
+        403: OpenApiResponse(response=StudentErrorResponseSerializer, description="Only students allowed."),
+    },
+    description="Save or update the authenticated student's current location (latitude & longitude).",
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def update_student_location(request):
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Only student users can access this endpoint.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    serializer = StudentLocationUpsertSerializer(data=request.data)
+    if not serializer.is_valid():
+        return error_response(
+            "Validation error",
+            serializer.errors,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    location, _ = StudentLocation.objects.update_or_create(
+        student=request.user,
+        defaults={
+            "latitude": serializer.validated_data["latitude"],
+            "longitude": serializer.validated_data["longitude"],
+        },
+    )
+
+    return success_response(
+        {
+            "latitude": location.latitude,
+            "longitude": location.longitude,
+            "updated_at": location.updated_at,
+        },
+        message="Location updated successfully.",
+    )

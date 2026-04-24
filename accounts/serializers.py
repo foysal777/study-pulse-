@@ -5,10 +5,22 @@ from accounts.models import OtpPurpose
 User = get_user_model()
 
 
+def _get_student_location_model():
+    """Lazy import to avoid circular imports."""
+    from students.models import StudentLocation
+    return StudentLocation
+
+
 class UserSerializer(serializers.ModelSerializer):
+    is_location = serializers.SerializerMethodField()
+
+    def get_is_location(self, obj):
+        StudentLocation = _get_student_location_model()
+        return StudentLocation.objects.filter(student=obj).exists()
+
     class Meta:
         model = User
-        fields = ("id", "full_name", "email", "role", "is_email_verified", "is_profile_completed", "expo_push_token")
+        fields = ("id", "full_name", "email", "role", "is_email_verified", "is_profile_completed", "is_location", "expo_push_token")
 
 
 class PushTokenUpdateSerializer(serializers.Serializer):

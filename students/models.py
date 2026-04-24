@@ -152,11 +152,20 @@ class RecommendedCourse(models.Model):
 
 
 class StudentLocation(models.Model):
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    student = models.OneToOneField(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="student_location",
+        limit_choices_to={"role": "student"},
+        null=True,
+        blank=True,
+    )
+    latitude = models.DecimalField(max_digits=20, decimal_places=15)
+    longitude = models.DecimalField(max_digits=20, decimal_places=15)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.latitude}, {self.longitude}"
+        return f"{self.student} — {self.latitude}, {self.longitude}"
 
 
 class AssessmentSkill(models.TextChoices):

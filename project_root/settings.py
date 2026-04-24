@@ -24,7 +24,15 @@ SECRET_KEY = 'django-insecure-$5h3i2#$qg#58b1)j00cluqvel2&rp_e^fp**(8f&xyl)!$l71
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000', 'https://*.ngrok-free.app']
+CSRF_TRUSTED_ORIGINS = [
+    'http://127.0.0.1:8000',
+    'http://127.0.0.1:7090',
+    'http://127.0.0.1:6565',
+    'http://localhost:8000',
+    'http://localhost:7090',
+    'http://localhost:6565',
+    'https://*.ngrok-free.app',
+]
 
 # Application definition
 
@@ -110,6 +118,11 @@ UNFOLD = {
                         "title": "Interest Summaries",
                         "icon": "auto_awesome",
                         "link": "/admin/students/interestsummary/",
+                    },
+                    {
+                        "title": "Student Locations",
+                        "icon": "location_on",
+                        "link": "/admin/students/studentlocation/",
                     },
                 ],
             },
@@ -210,7 +223,7 @@ REST_FRAMEWORK = {
 
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=8),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=10),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
     'SLIDING_TOKEN_LIFETIME': timedelta(days=30),
     'SLIDING_TOKEN_REFRESH_LIFETIME_LATE_USER': timedelta(days=1),
