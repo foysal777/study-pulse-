@@ -13,14 +13,28 @@ def _get_student_location_model():
 
 class UserSerializer(serializers.ModelSerializer):
     is_location = serializers.SerializerMethodField()
+    profile = serializers.SerializerMethodField()
 
     def get_is_location(self, obj):
         StudentLocation = _get_student_location_model()
         return StudentLocation.objects.filter(student=obj).exists()
 
+    def get_profile(self, obj):
+        request = self.context.get("request")
+        if not request:
+            return None
+        
+        if obj.role == "student":
+            try:
+                from students.views import _build_profile_setup_payload
+                return _build_profile_setup_payload(request, obj, obj.student_profile)
+            except Exception:
+                return None
+        return None
+
     class Meta:
         model = User
-        fields = ("id", "full_name", "email", "role", "is_email_verified", "is_profile_completed", "is_location", "expo_push_token")
+        fields = ("id", "full_name", "email", "role", "is_email_verified", "is_profile_completed", "is_location", "expo_push_token", "profile")
 
 
 class PushTokenUpdateSerializer(serializers.Serializer):

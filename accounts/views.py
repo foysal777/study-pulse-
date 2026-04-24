@@ -121,7 +121,7 @@ def sign_up(request):
 
     return created_response(
         {
-            "user": UserSerializer(user).data,
+            "user": UserSerializer(user, context={"request": request}).data,
             "next_step": "Verify the 4 digit OTP sent to your email to activate your account.",
         },
         message="Student account created. OTP sent to email.",
@@ -161,7 +161,7 @@ def verify_sign_up_otp(request):
 
     return success_response(
         {
-            "user": UserSerializer(user).data,
+            "user": UserSerializer(user, context={"request": request}).data,
             "tokens": _build_tokens_for_user(user),
             "is_profile_completed": user.is_profile_completed,
         },
@@ -218,7 +218,7 @@ def sign_in(request):
 
     return success_response(
         {
-            "user": UserSerializer(user).data,
+            "user": UserSerializer(user, context={"request": request}).data,
             "tokens": _build_tokens_for_user(user),
             "is_profile_completed": user.is_profile_completed,
         },
@@ -297,7 +297,7 @@ def refresh_token(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def me(request):
-    return success_response(UserSerializer(request.user).data, message="User profile fetched successfully.")
+    return success_response(UserSerializer(request.user, context={"request": request}).data, message="User profile fetched successfully.")
 
 
 @extend_schema(

@@ -70,13 +70,13 @@ class PlaceholderAdminMixin:
         return form
 
 
-# @admin.register(Intterest)
-# class IntterestAdmin(ModelAdmin):
-#     change_list_template = "admin/students/intterest/change_list.html"
-#     change_form_template = "admin/students/intterest/change_form.html"
-#     show_add_link = False
-#     list_display = ("id", "interest_name", "student", "created_at")
-#     search_fields = ("interest_name", "student__full_name", "student__email")
+@admin.register(Intterest)
+class IntterestAdmin(ModelAdmin):
+    change_list_template = "admin/students/intterest/change_list.html"
+    change_form_template = "admin/students/intterest/change_form.html"
+    show_add_link = False
+    list_display = ("id", "interest_name", "student", "created_at")
+    search_fields = ("interest_name", "student__full_name", "student__email")
 
 
 @admin.register(InterestSummary)

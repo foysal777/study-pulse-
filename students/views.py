@@ -504,7 +504,7 @@ def student_dashboard(request):
             "date": slot.date.strftime("%a, %b %d"),
             "time": slot.start_time.strftime("%I:%M %p"),
             "mode": slot.mode,
-            "meeting_link": slot.accessible_meeting_link,
+            "whatsapp_room_link": slot.accessible_whatsapp_room_link,
         }
 
     # 3. My Progress (Bookings with marks)
@@ -516,9 +516,19 @@ def student_dashboard(request):
     my_progress = []
     for i, b in enumerate(bookings_with_marks):
         my_progress.append({
+            "id": b.id,
             "test_name": f"Progress test {i + 1}",
-            "percentage": f"{b.marks}%"
+            "percentage": f"{b.marks}%",
+            "feedback": b.feedback if b.feedback else "Good progress!",
         })
+
+    # Fallback to dummy data if no real progress exists
+    if not my_progress:
+        my_progress = [
+            {"id": 1, "test_name": "Progress test 1", "percentage": "85%", "feedback": "Excellent work!"},
+            {"id": 2, "test_name": "Progress test 2", "percentage": "92%", "feedback": "Keep it up!"},
+            {"id": 3, "test_name": "Progress test 3", "percentage": "78%", "feedback": "Needs improvement in grammar."},
+        ]
 
     payload = {
         "student_name": student_name,

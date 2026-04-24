@@ -196,8 +196,10 @@ class AssessmentResultSuccessResponseSerializer(serializers.Serializer):
 
 
 class StudentDashboardProgressSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
     test_name = serializers.CharField()
     percentage = serializers.CharField()
+    feedback = serializers.CharField(allow_null=True, allow_blank=True)
 
 
 class StudentDashboardDataSerializer(serializers.Serializer):

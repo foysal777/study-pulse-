@@ -33,3 +33,12 @@ def error_response(
         "errors": errors,
     }
     return Response(payload, status=status_code)
+
+
+
+
+
+
+
+
+
