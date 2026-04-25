@@ -34,7 +34,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "full_name", "email", "role", "is_email_verified", "is_profile_completed", "is_location", "expo_push_token", "profile")
+        fields = ("id", "full_name", "email", "role", "is_email_verified", "is_profile_completed", "is_first_assement_completed", "is_location", "expo_push_token", "profile")
 
 
 class PushTokenUpdateSerializer(serializers.Serializer):

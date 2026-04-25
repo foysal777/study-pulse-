@@ -38,8 +38,11 @@ from students.serializers import (
     RecommendedCourseDataSerializer,
     GeneralInfoDataSerializer,
     GeneralInfoSuccessResponseSerializer,
+    StudentNotificationSerializer,
+    StudentNotificationSuccessResponseSerializer,
 )
 from teachers.models import StudentBooking, GeneralInfo
+from students.models import StudentNotification
 
 
 def _get_core_reasons_options():
@@ -421,6 +424,10 @@ def assessment_submit(request, template_id):
         attempt.evaluated_at = timezone.now()
         attempt.save()
 
+        if not request.user.is_first_assement_completed:
+            request.user.is_first_assement_completed = True
+            request.user.save(update_fields=["is_first_assement_completed", "updated_at"])
+
         # Find mapped level
         mapped_level = None
         level_band = (
@@ -759,4 +766,35 @@ def get_general_info(request):
     return success_response(
         serializer.data,
         message="General info retrieved successfully."
+    )
+
+
+@extend_schema(
+    summary="Get Student Notifications",
+    responses={
+        200: OpenApiResponse(
+            response=StudentNotificationSuccessResponseSerializer,
+            description="Notifications retrieved successfully.",
+        ),
+    },
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_student_notifications(request):
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Access denied",
+            "Only students can access this info.",
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    notifications = StudentNotification.objects.filter(student=request.user)
+    serializer = StudentNotificationSerializer(notifications, many=True)
+    
+    # Mark as read
+    notifications.filter(is_read=False).update(is_read=True)
+
+    return success_response(
+        serializer.data,
+        message="Notifications retrieved successfully."
     )

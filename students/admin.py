@@ -406,6 +406,7 @@ class AssessmentTemplateAdmin(PlaceholderAdminMixin, ModelAdmin):
     list_filter = ("is_active",)
     search_fields = ("name",)
     inlines = (AssessmentSectionInline, AssessmentLevelBandInline)
+    list_per_page = 20
 
 
 class AssessmentQuestionInline(admin.TabularInline):
@@ -447,6 +448,7 @@ class AssessmentSectionAdmin(PlaceholderAdminMixin, ModelAdmin):
     list_filter = ("skill", "template")
     search_fields = ("title", "template__name")
     inlines = (AssessmentQuestionInline,)
+    list_per_page = 20
 
 
 class AssessmentOptionInline(admin.TabularInline):
@@ -461,6 +463,7 @@ class AssessmentQuestionAdmin(PlaceholderAdminMixin, ModelAdmin):
     list_filter = ("question_type", "is_active", "section__skill", "section__template")
     search_fields = ("prompt", "section__title", "section__template__name")
     inlines = (AssessmentOptionInline,)
+    list_per_page = 20
     fieldsets = (
         (
             "Question",
@@ -554,6 +557,7 @@ class StudentAssessmentAttemptAdmin(PlaceholderAdminMixin, ModelAdmin):
     autocomplete_fields = ("student", "template")
     readonly_fields = ("started_at",)
     inlines = (StudentAssessmentAnswerInline,)
+    list_per_page = 20
 
 
 @admin.register(StudentAssessmentAnswer)

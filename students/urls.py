@@ -13,6 +13,7 @@ urlpatterns = [
     path("dashboard/", views.student_dashboard, name="student_dashboard"),
     path("recommended-course/", views.get_recommended_course, name="get_recommended_course"),
     path("general-info/", views.get_general_info, name="get_general_info"),
+    path("notifications/", views.get_student_notifications, name="get_student_notifications"),
     path("cancel-booking/<int:booking_id>/", views.cancel_booking, name="cancel_booking"),
 ]
 

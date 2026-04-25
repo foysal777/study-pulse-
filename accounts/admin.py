@@ -3,6 +3,7 @@ from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from unfold.admin import ModelAdmin
+from unfold.decorators import display
 from unfold.forms import AdminPasswordChangeForm
 
 from accounts.forms import UserAdminChangeForm, UserAdminCreationForm
@@ -19,14 +20,14 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
     change_password_form = AdminPasswordChangeForm
     model = User
     ordering = ("id",)
-    list_display = ("id", "full_name", "email", "role", "is_active", "is_email_verified", "is_staff")
+    list_display = ("id", "full_name", "email", "role", "is_active", "is_email_verified", "is_first_assement_completed", "is_staff")
     readonly_fields=("is_active", "is_staff", "is_email_verified")
     list_filter = ("role", "is_active", "is_email_verified", "is_staff", "is_superuser")
     search_fields = ("full_name", "email")
 
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Personal Info", {"fields": ("full_name", "role")}),
+        ("Personal Info", {"fields": ("full_name", "role", "is_first_assement_completed")}),
         ("Permissions", {"fields": ("is_active", "is_email_verified", "is_staff", "is_superuser", "groups", "user_permissions")}),
         ("Important Dates", {"fields": ("last_login",)}),
     )

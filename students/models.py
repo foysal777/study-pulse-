@@ -359,3 +359,23 @@ class AssessmentLevelBand(models.Model):
 
     def __str__(self):
         return f"{self.template.name} - {self.label}"
+
+
+class StudentNotification(models.Model):
+    student = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="notifications",
+    )
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Student Notification"
+        verbose_name_plural = "Student Notifications"
+
+    def __str__(self):
+        return f"{self.student.full_name} - {self.title}"

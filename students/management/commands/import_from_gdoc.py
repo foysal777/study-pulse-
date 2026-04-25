@@ -88,11 +88,15 @@ def _parse_doc(text: str) -> dict:
         )
 
     # ── Sections ──────────────────────────────────────────────────────────────
+    # ── Sections ──────────────────────────────────────────────────────────────
     SKILL_PATTERN = re.compile(r"\[SECTION:\s*(grammar|vocabulary|listening|reading)\]", re.IGNORECASE)
+    PASSAGE_PATTERN = re.compile(r"\[PASSAGE\]", re.IGNORECASE)
     OPTION_PATTERN = re.compile(r"^[A-Da-d][.)]\s+(.+?)(\s+\*\s*)?$")
 
     sections = []
     current_skill = None
+    current_passage = []
+    is_parsing_passage = False
     current_questions = []
     current_prompt_lines = []
     current_options = []
@@ -101,12 +105,19 @@ def _parse_doc(text: str) -> dict:
         """Save the current question buffer."""
         if not current_prompt_lines:
             return
-        prompt = " ".join(current_prompt_lines).strip()
+        prompt = "\n".join(current_prompt_lines).strip()
         if not prompt or not current_options:
             return
+        
+        q_type = "mcq"
+        if current_skill == "reading":
+            q_type = "passage"
+        elif current_skill == "listening":
+            q_type = "audio"
+
         current_questions.append({
             "prompt": prompt,
-            "type": "mcq",
+            "type": q_type,
             "options": list(current_options),
         })
         current_prompt_lines.clear()
@@ -121,9 +132,11 @@ def _parse_doc(text: str) -> dict:
             sections.append({
                 "skill": current_skill.lower(),
                 "title": f"{current_skill.capitalize()} Section",
+                "passage": "\n".join(current_passage).strip(),
                 "questions": list(current_questions),
             })
         current_questions.clear()
+        current_passage.clear()
 
     for line in lines:
         # New section header
@@ -133,10 +146,34 @@ def _parse_doc(text: str) -> dict:
             current_skill = m_skill.group(1).lower()
             current_prompt_lines.clear()
             current_options.clear()
+            current_passage.clear()
+            is_parsing_passage = False
             continue
 
         if current_skill is None:
             continue  # before first [SECTION:…]
+
+        # Passage block
+        if PASSAGE_PATTERN.match(line.strip()):
+            is_parsing_passage = True
+            continue
+        
+        if is_parsing_passage:
+            # We assume passage ends when a question starts or a blank line followed by a question
+            # But simpler: assume passage is everything until the first question prompt (which starts with a question)
+            # Actually, let's look for MCQ options to detect when the passage ends.
+            if OPTION_PATTERN.match(line.strip()):
+                is_parsing_passage = False
+                # The line before might have been the prompt
+                if current_passage:
+                    # Move the last non-empty line from passage to prompt
+                    last_line = current_passage.pop()
+                    while last_line.strip() == "" and current_passage:
+                        last_line = current_passage.pop()
+                    current_prompt_lines.append(last_line)
+            else:
+                current_passage.append(line)
+                continue
 
         # Option line: A) … or A. …
         m_opt = OPTION_PATTERN.match(line.strip())

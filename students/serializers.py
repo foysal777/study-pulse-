@@ -271,3 +271,16 @@ class GeneralInfoSuccessResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField(default=True)
     message = serializers.CharField()
     data = GeneralInfoDataSerializer()
+
+
+class StudentNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        from students.models import StudentNotification
+        model = StudentNotification
+        fields = ["id", "title", "body", "is_read", "created_at"]
+
+
+class StudentNotificationSuccessResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(default=True)
+    message = serializers.CharField()
+    data = StudentNotificationSerializer(many=True)

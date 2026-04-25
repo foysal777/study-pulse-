@@ -653,6 +653,20 @@ def teacher_send_session_notice(request, slot_id):
     title = serializer.validated_data["title"]
     body = serializer.validated_data["body"]
     
+    # Save notifications to database
+    from students.models import StudentNotification
+    notifications_to_create = []
+    for booking in bookings:
+        notifications_to_create.append(
+            StudentNotification(
+                student=booking.student,
+                title=title,
+                body=body
+            )
+        )
+    if notifications_to_create:
+        StudentNotification.objects.bulk_create(notifications_to_create)
+
     # Send push notifications
     result = send_expo_push_notification(
         push_tokens=push_tokens,
@@ -663,7 +677,7 @@ def teacher_send_session_notice(request, slot_id):
 
     return success_response(
         data={"expo_result": result},
-        message=f"Notice sent to {len(push_tokens)} students."
+        message=f"Notice sent and saved for {len(push_tokens)} students."
     )
 
 
