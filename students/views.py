@@ -15,7 +15,7 @@ from students.models import (
     Intterest, InterestSummary, StudentProfile, StudentLocation, AssessmentTemplate,
     AssessmentQuestion, AssessmentOption,
     StudentAssessmentAttempt, StudentAssessmentAnswer,
-    AssessmentAttemptStatus, AssessmentLevelBand
+    AssessmentAttemptStatus, AssessmentLevelBand, RecommendedCourse
 )
 from teachers.models import (
     StudentBooking, TeacherSlot
@@ -34,8 +34,12 @@ from students.serializers import (
     StudentDashboardSuccessResponseSerializer,
     StudentLocationUpsertSerializer,
     StudentLocationSuccessResponseSerializer,
+    RecommendedCourseSuccessResponseSerializer,
+    RecommendedCourseDataSerializer,
+    GeneralInfoDataSerializer,
+    GeneralInfoSuccessResponseSerializer,
 )
-from teachers.models import StudentBooking
+from teachers.models import StudentBooking, GeneralInfo
 
 
 def _get_core_reasons_options():
@@ -285,7 +289,7 @@ def assessment_detail(request, template_id):
     except AssessmentTemplate.DoesNotExist:
         return error_response("Assessment level not found.", status_code=status.HTTP_404_NOT_FOUND)
 
-    serializer = AssessmentTemplateDisplaySerializer(template)
+    serializer = AssessmentTemplateDisplaySerializer(template, context={"request": request})
     return success_response(serializer.data, message="Assessment questions fetched successfully.")
 
 
@@ -612,4 +616,147 @@ def update_student_location(request):
             "updated_at": location.updated_at,
         },
         message="Location updated successfully.",
+    )
+
+
+@extend_schema(
+    summary="Get Recommended Course based on latest assessment",
+    responses={
+        200: OpenApiResponse(
+            response=RecommendedCourseSuccessResponseSerializer,
+            description="Recommended course retrieved successfully.",
+        ),
+        400: OpenApiResponse(
+            response=StudentErrorResponseSerializer,
+            description="No assessment found.",
+        ),
+    },
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_recommended_course(request):
+    """
+    Returns the recommended course based on the student's latest assessment score.
+    """
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Access denied",
+            "Only students can access recommended courses.",
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    # Get latest evaluated assessment attempt
+    latest_attempt = StudentAssessmentAttempt.objects.filter(
+        student=request.user,
+        status=AssessmentAttemptStatus.EVALUATED
+    ).order_by("-evaluated_at").first()
+
+    if not latest_attempt:
+        return error_response(
+            "No assessment found",
+            "You have not completed any assessments yet.",
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    template_name = latest_attempt.template.name.lower()
+    total_max = sum(q.marks for s in latest_attempt.template.sections.all() for q in s.questions.all())
+    overall_percentage = (latest_attempt.total_score * Decimal("100") / total_max) if total_max > 0 else Decimal("0")
+
+    recommended_name = None
+    if "upper-intermediate" in template_name or "upper intermediate" in template_name:
+        recommended_name = "Intermediate" if overall_percentage < 70 else "Upper-Intermediate"
+    elif "pre-intermediate" in template_name or "pre intermediate" in template_name:
+        recommended_name = "Elementary" if overall_percentage < 70 else "Pre-Intermediate"
+    elif "intermediate" in template_name:
+        recommended_name = "Pre-Intermediate" if overall_percentage < 70 else "Intermediate"
+    elif "elementary" in template_name:
+        recommended_name = "Elementary" if overall_percentage < 70 else "Pre-Intermediate"
+
+    if not recommended_name:
+        return error_response(
+            "Recommendation failed",
+            "Could not determine recommended course based on template name.",
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    course = RecommendedCourse.objects.filter(course_name__icontains=recommended_name).first()
+    if not course:
+        return error_response(
+            "Course not found",
+            f"Recommended course '{recommended_name}' is not currently available.",
+            status.HTTP_404_NOT_FOUND,
+        )
+
+    serializer = RecommendedCourseDataSerializer(course, context={"request": request})
+    return success_response(
+        serializer.data,
+        message=f"Recommended course for {recommended_name} retrieved successfully."
+    )
+
+
+@extend_schema(
+    summary="Get General Info and Course Calendar",
+    responses={
+        200: OpenApiResponse(
+            response=GeneralInfoSuccessResponseSerializer,
+            description="General info retrieved successfully.",
+        ),
+    },
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_general_info(request):
+    """
+    Returns general info (social links) and the specific calendar based on the student's latest assessment score.
+    """
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Access denied",
+            "Only students can access this info.",
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    # Base general info
+    general_info = GeneralInfo.objects.filter(is_deleted=False)
+
+    latest_attempt = StudentAssessmentAttempt.objects.filter(
+        student=request.user,
+        status=AssessmentAttemptStatus.EVALUATED
+    ).order_by("-evaluated_at").first()
+
+    info_obj = None
+
+    if latest_attempt:
+        template_name = latest_attempt.template.name.lower()
+        total_max = sum(q.marks for s in latest_attempt.template.sections.all() for q in s.questions.all())
+        overall_percentage = (latest_attempt.total_score * Decimal("100") / total_max) if total_max > 0 else Decimal("0")
+
+        recommended_name = None
+        if "upper-intermediate" in template_name or "upper intermediate" in template_name:
+            recommended_name = "Intermediate" if overall_percentage < 70 else "Upper-Intermediate"
+        elif "pre-intermediate" in template_name or "pre intermediate" in template_name:
+            recommended_name = "Elementary" if overall_percentage < 70 else "Pre-Intermediate"
+        elif "intermediate" in template_name:
+            recommended_name = "Pre-Intermediate" if overall_percentage < 70 else "Intermediate"
+        elif "elementary" in template_name:
+            recommended_name = "Elementary" if overall_percentage < 70 else "Pre-Intermediate"
+
+        if recommended_name:
+            info_obj = general_info.filter(calender_type__icontains=recommended_name).first()
+
+    if not info_obj:
+        # Fallback to the latest available general info if no match found
+        info_obj = general_info.order_by("-created_at").first()
+
+    if not info_obj:
+        return error_response(
+            "Not found",
+            "No general information is currently available.",
+            status.HTTP_404_NOT_FOUND,
+        )
+
+    serializer = GeneralInfoDataSerializer(info_obj, context={"request": request})
+    return success_response(
+        serializer.data,
+        message="General info retrieved successfully."
     )

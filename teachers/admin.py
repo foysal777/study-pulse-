@@ -737,17 +737,17 @@ class PendingRequestAdmin(PlaceholderAdminMixin, ModelAdmin):
 @admin.register(GeneralInfo)
 class GeneralInfoAdmin(PlaceholderAdminMixin, ModelAdmin):
     change_form_template = "admin/teachers/generalinfo/change_form.html"
-    show_add_link = False
     list_display = (
         "id",
-        "file_name",
-   
+        "calender_type",
         "date",
         "time",
-        "is_deleted",
+        "calendar_file_link",
+        "is_deleted_status",
+        "actions_menu",
     )
     list_filter = ("is_deleted", "date")
-    search_fields = ("file_name",)
+    search_fields = ("calender_type",)
     readonly_fields = (
         "facebook_button",
         "youtube_button",
@@ -761,10 +761,10 @@ class GeneralInfoAdmin(PlaceholderAdminMixin, ModelAdmin):
             "File Information",
             {
                 "fields": (
-                    "file_name",
+                    "calender_type",
                     "date",
                     "time",
-                    "file_upload",
+                    "calender_upload",
                     "is_deleted",
                 ),
             },
@@ -783,31 +783,6 @@ class GeneralInfoAdmin(PlaceholderAdminMixin, ModelAdmin):
             },
         ),
     )
-
-    def changelist_view(self, request, extra_context=None):
-        if request.GET.get("show_list") == "1":
-            return super().changelist_view(request, extra_context)
-        return HttpResponseRedirect(reverse("admin:teachers_generalinfo_add"))
-
-    def add_view(self, request, form_url="", extra_context=None):
-        extra_context = extra_context or {}
-        extra_context["general_info_list"] = self.get_queryset(request)
-        return super().add_view(request, form_url, extra_context)
-
-    def change_view(self, request, object_id, form_url="", extra_context=None):
-        extra_context = extra_context or {}
-        extra_context["general_info_list"] = self.get_queryset(request)
-        return super().change_view(request, object_id, form_url, extra_context)
-
-    def response_add(self, request, obj, post_url_continue=None):
-        if "_continue" in request.POST or "_addanother" in request.POST:
-            return super().response_add(request, obj, post_url_continue)
-        return HttpResponseRedirect(reverse("admin:teachers_generalinfo_add"))
-
-    def response_change(self, request, obj):
-        if "_continue" in request.POST or "_addanother" in request.POST:
-            return super().response_change(request, obj)
-        return HttpResponseRedirect(reverse("admin:teachers_generalinfo_add"))
 
     def _link_button(self, url, label):
         if not url:
@@ -884,6 +859,33 @@ class GeneralInfoAdmin(PlaceholderAdminMixin, ModelAdmin):
         return self._link_button(obj.kids_learning_club_link, "Kids Learning Club")
 
     kids_learning_club_button.short_description = "Kids learning club"
+
+    @display(description="Status", label={"Active": "success", "Deleted": "danger"})
+    def is_deleted_status(self, obj):
+        return "Deleted" if obj.is_deleted else "Active"
+
+    @display(description="Calendar File")
+    def calendar_file_link(self, obj):
+        if not obj.calender_upload:
+            return "-"
+        return format_html(
+            '<a href="{}" target="_blank" style="color:#2563eb; text-decoration:underline; display:flex; align-items:center; gap:4px;">'
+            '<span class="material-symbols-outlined" style="font-size: 16px;">download</span> Download'
+            '</a>',
+            obj.calender_upload.url
+        )
+
+    @display(description="Actions")
+    def actions_menu(self, obj):
+        edit_url = reverse("admin:teachers_generalinfo_change", args=[obj.pk])
+        delete_url = reverse("admin:teachers_generalinfo_delete", args=[obj.pk])
+        return format_html(
+            '<div class="flex items-center gap-2">'
+            '<a href="{}" class="text-blue-600 hover:text-blue-800"><span class="material-symbols-outlined">edit</span></a>'
+            '<a href="{}" class="text-red-600 hover:text-red-800"><span class="material-symbols-outlined">delete</span></a>'
+            '</div>',
+            edit_url, delete_url
+        )
 
 @admin.register(TeachersLocation)
 class TeachersLocationAdmin(ModelAdmin):

@@ -68,50 +68,6 @@
         </div>
     </div>
 
-    {% if general_info_list %}
-        <div class="mt-6 border-t border-base-200 pt-4 dark:border-base-800">
-            <h2 class="mb-3 text-base font-semibold text-font-important-light dark:text-font-important-dark">
-                {% trans "Saved General Info" %}
-            </h2>
-
-            <div class="overflow-hidden rounded-default border border-base-200 bg-white shadow-xs dark:border-base-800 dark:bg-base-900">
-                <table class="min-w-full divide-y divide-base-200 text-sm dark:divide-base-800">
-                    <thead class="bg-base-50 dark:bg-base-900/40">
-                        <tr>
-                            <th class="px-4 py-3 text-left font-semibold">{% trans "ID" %}</th>
-                            <th class="px-4 py-3 text-left font-semibold">{% trans "File name" %}</th>
-                            <th class="px-4 py-3 text-left font-semibold">{% trans "Date" %}</th>
-                            <th class="px-4 py-3 text-left font-semibold">{% trans "Time" %}</th>
-                            <th class="px-4 py-3 text-left font-semibold">{% trans "Delete" %}</th>
-                            <th class="px-4 py-3 text-left font-semibold">{% trans "Edit" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-base-200 dark:divide-base-800">
-                        {% for item in general_info_list %}
-                            <tr>
-                                <td class="px-4 py-3">{{ item.pk }}</td>
-                                <td class="px-4 py-3">{{ item.file_name }}</td>
-                                <td class="px-4 py-3">{{ item.date }}</td>
-                                <td class="px-4 py-3">{{ item.time }}</td>
-                                <td class="px-4 py-3">
-                                    {% if item.is_deleted %}
-                                        {% trans "Yes" %}
-                                    {% else %}
-                                        {% trans "No" %}
-                                    {% endif %}
-                                </td>
-                                <td class="px-4 py-3">
-                                    <a href="{% url opts|admin_urlname:'change' item.pk %}" class="text-primary-600 hover:underline">
-                                        {% trans "Open" %}
-                                    </a>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    {% endif %}
 {% endblock %}
 
 {% block footer %}{% endblock %}

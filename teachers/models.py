@@ -144,10 +144,10 @@ class GeneralInfo(models.Model):
     library_link = models.URLField(blank=True)
     adult_learning_club_link = models.URLField(blank=True)
     kids_learning_club_link = models.URLField(blank=True)
-    file_name = models.CharField(max_length=255)
+    calender_type = models.CharField(max_length=255, blank=True, null=True)
     date = models.DateField()
     time = models.TimeField()
-    file_upload = models.FileField(upload_to="general_info_files/")
+    calender_upload = models.FileField(upload_to="general_info_files/")
     is_deleted = models.BooleanField(default=False, verbose_name="Delete")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -158,7 +158,7 @@ class GeneralInfo(models.Model):
         verbose_name_plural = "General Info"
 
     def __str__(self):
-        return self.file_name
+        return self.calender_type or "General Info"
 
 
 class TeacherProfile(models.Model):

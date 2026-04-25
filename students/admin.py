@@ -189,34 +189,24 @@ class RecommendedCourseAdmin(PlaceholderAdminMixin, ModelAdmin):
         "id",
         "course_name",
         "teachers_list",
-        "interest_type_list",
-        "seat_limit",
-        "resource_link",
         "banner_preview",
         "created_at",
         "actions_menu",
     )
-    list_filter = ("teachers", "interest_type")
+    list_filter = ("teachers",)
     readonly_fields = ("banner_preview",)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         if db_field.name == "teachers":
             kwargs["widget"] = MultiCheckboxDropdownWidget(attrs={"empty_label": "Select teachers"})
             kwargs["queryset"] = db_field.remote_field.model.objects.order_by("name")
-        if db_field.name == "interest_type":
-            kwargs["widget"] = MultiCheckboxDropdownWidget(attrs={"empty_label": "Select interest type"})
-            kwargs["queryset"] = Intterest.objects.order_by("interest_name", "id").distinct("interest_name")
+       
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def teachers_list(self, obj):
         return obj.teachers_display or "-"
 
     teachers_list.short_description = "Teachers"
-
-    def interest_type_list(self, obj):
-        return obj.interest_type_display or "-"
-
-    interest_type_list.short_description = "Interest Type"
 
     def banner_preview(self, obj):
         if not obj or not obj.banner:

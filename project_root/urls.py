@@ -1,3 +1,5 @@
+import mimetypes
+
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -6,6 +8,13 @@ from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
 )
+
+# Force correct MIME types for audio files so browsers play instead of download
+mimetypes.add_type("audio/mpeg", ".mpeg")
+mimetypes.add_type("audio/mpeg", ".mp3")
+mimetypes.add_type("audio/mp4", ".m4a")
+mimetypes.add_type("audio/ogg", ".ogg")
+mimetypes.add_type("audio/wav", ".wav")
 
 
 urlpatterns = [

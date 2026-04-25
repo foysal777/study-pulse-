@@ -109,6 +109,7 @@ class AssessmentOptionDisplaySerializer(serializers.ModelSerializer):
 class AssessmentQuestionDisplaySerializer(serializers.ModelSerializer):
     options = AssessmentOptionDisplaySerializer(many=True, read_only=True)
     question_type = serializers.SerializerMethodField()
+    audio_file = serializers.SerializerMethodField()
 
     def get_question_type(self, obj):
         skill = obj.section.skill
@@ -117,6 +118,14 @@ class AssessmentQuestionDisplaySerializer(serializers.ModelSerializer):
         elif skill == "listening":
             return "audio"
         return obj.question_type
+
+    def get_audio_file(self, obj):
+        if not obj.audio_file:
+            return None
+        request = self.context.get("request")
+        if request:
+            return request.build_absolute_uri(obj.audio_file.url)
+        return obj.audio_file.url
 
     class Meta:
         model = AssessmentQuestion
@@ -232,3 +241,33 @@ class StudentLocationSuccessResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField(default=True)
     message = serializers.CharField()
     data = StudentLocationDataSerializer()
+
+
+class RecommendedCourseDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        from students.models import RecommendedCourse
+        model = RecommendedCourse
+        fields = ["id", "course_name", "banner"]
+
+
+class RecommendedCourseSuccessResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(default=True)
+    message = serializers.CharField()
+    data = RecommendedCourseDataSerializer()
+
+
+class GeneralInfoDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        from teachers.models import GeneralInfo
+        model = GeneralInfo
+        fields = [
+            "id", "facebook_link", "youtube_link", "whatsapp_link",
+            "library_link", "adult_learning_club_link", "kids_learning_club_link",
+            "calender_type", "calender_upload"
+        ]
+
+
+class GeneralInfoSuccessResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(default=True)
+    message = serializers.CharField()
+    data = GeneralInfoDataSerializer()

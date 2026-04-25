@@ -1,0 +1,621 @@
+{
+  "template_name": "Pre-Intermediate (A2)",
+  "pass_percentage": 70.0,
+  "sections": [
+    {
+      "skill": "grammar",
+      "title": "Grammar Section",
+      "questions": [
+        {
+          "prompt": "1. ____ did you leave your job?",
+          "type": "mcq",
+          "options": [
+            {"text": "a) Where", "is_correct": false},
+            {"text": "b) What", "is_correct": false},
+            {"text": "c) Why", "is_correct": true},
+            {"text": "d) Which", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "2. They ____ fly to India.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) didn't", "is_correct": true},
+            {"text": "b) doesn't", "is_correct": false},
+            {"text": "c) haven't", "is_correct": false},
+            {"text": "d) has", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "3. I ____ to go home now.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) 'm wanting", "is_correct": false},
+            {"text": "b) will want", "is_correct": false},
+            {"text": "c) want", "is_correct": true},
+            {"text": "d) wanting", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "4. She ____ in Belgium at the moment.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) living", "is_correct": false},
+            {"text": "b) 's lived", "is_correct": false},
+            {"text": "c) is living", "is_correct": true},
+            {"text": "d) lives", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "5. I'm not keen on ____.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) run", "is_correct": false},
+            {"text": "b) to running", "is_correct": false},
+            {"text": "c) to run", "is_correct": false},
+            {"text": "d) running", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "6. What ____ tonight?",
+          "type": "mcq",
+          "options": [
+            {"text": "a) they do", "is_correct": false},
+            {"text": "b) do they do", "is_correct": false},
+            {"text": "c) are they doing", "is_correct": true},
+            {"text": "d) are they do", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "7. Are you ____ the new exhibition at the National Gallery?",
+          "type": "mcq",
+          "options": [
+            {"text": "a) going to see", "is_correct": true},
+            {"text": "b) seeing", "is_correct": false},
+            {"text": "c) going see", "is_correct": false},
+            {"text": "d) go to see", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "8. ____ he ever flown in a helicopter?",
+          "type": "mcq",
+          "options": [
+            {"text": "a) Did", "is_correct": false},
+            {"text": "b) Do", "is_correct": false},
+            {"text": "c) Has", "is_correct": true},
+            {"text": "d) Have", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "9. You ____ be late for school again.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) mustn't", "is_correct": true},
+            {"text": "b) have to", "is_correct": false},
+            {"text": "c) must", "is_correct": false},
+            {"text": "d) can", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "10. You ____ wear a suit. It's a very formal party.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) shouldn't", "is_correct": false},
+            {"text": "b) have to", "is_correct": true},
+            {"text": "c) mustn't", "is_correct": false},
+            {"text": "d) might", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "11. I ____ dinner when I heard a strange noise.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) was cook", "is_correct": false},
+            {"text": "b) did cook", "is_correct": false},
+            {"text": "c) was cooking", "is_correct": true},
+            {"text": "d) am doing", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "12. When did she decide ____ married?",
+          "type": "mcq",
+          "options": [
+            {"text": "a) to get", "is_correct": true},
+            {"text": "b) got", "is_correct": false},
+            {"text": "c) to", "is_correct": false},
+            {"text": "d) get", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "13. We should avoid ____ in August.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) travelled", "is_correct": false},
+            {"text": "b) to travel", "is_correct": false},
+            {"text": "c) travelling", "is_correct": true},
+            {"text": "d) to travelling", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "14. He's studied Spanish ____ last year.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) since", "is_correct": true},
+            {"text": "b) the", "is_correct": false},
+            {"text": "c) at", "is_correct": false},
+            {"text": "d) -", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "15. I don't think I ____ get the job. I didn't answer all their questions in the interview very well.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) 'll", "is_correct": true},
+            {"text": "b) might", "is_correct": false},
+            {"text": "c) won't", "is_correct": false},
+            {"text": "d) might not", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "16. She ____ here this weekend.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) will being", "is_correct": false},
+            {"text": "b) may to be", "is_correct": false},
+            {"text": "c) won't to be", "is_correct": false},
+            {"text": "d) might be", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "17. We haven't seen them ____ years.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) at", "is_correct": false},
+            {"text": "b) since", "is_correct": false},
+            {"text": "c) for", "is_correct": true},
+            {"text": "d) ages", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "18. How long have you ____ him?",
+          "type": "mcq",
+          "options": [
+            {"text": "a) know", "is_correct": false},
+            {"text": "b) knew", "is_correct": false},
+            {"text": "c) knows", "is_correct": false},
+            {"text": "d) known", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "19. I ____ wear a uniform to school.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) use to", "is_correct": false},
+            {"text": "b) didn't use to", "is_correct": true},
+            {"text": "c) used", "is_correct": false},
+            {"text": "d) didn't used to", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "20. Did they ____ in Australia?",
+          "type": "mcq",
+          "options": [
+            {"text": "a) use to live", "is_correct": true},
+            {"text": "b) used to live", "is_correct": false},
+            {"text": "c) used live", "is_correct": false},
+            {"text": "d) used to living", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "21. I travelled around the world for a year ____ learn about other cultures.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) for", "is_correct": false},
+            {"text": "b) for to", "is_correct": false},
+            {"text": "c) to", "is_correct": true},
+            {"text": "d) in order", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "22. Children spend ____ hours watching TV.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) too many", "is_correct": true},
+            {"text": "b) not enough", "is_correct": false},
+            {"text": "c) very", "is_correct": false},
+            {"text": "d) too much", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "23. I don't have ____ to do the things I enjoy.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) time enough", "is_correct": false},
+            {"text": "b) enough time", "is_correct": true},
+            {"text": "c) too many time", "is_correct": false},
+            {"text": "d) some time", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "24. It's ____ beautiful house I've ever seen.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) most", "is_correct": false},
+            {"text": "b) more", "is_correct": false},
+            {"text": "c) the most", "is_correct": true},
+            {"text": "d) a most", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "25. There's more traffic and ____ space to walk in the streets nowadays.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) more", "is_correct": false},
+            {"text": "b) less", "is_correct": true},
+            {"text": "c) least", "is_correct": false},
+            {"text": "d) bigger", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "26. I think travelling by plane is ____ easier than travelling by car.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) more", "is_correct": false},
+            {"text": "b) most", "is_correct": false},
+            {"text": "c) -", "is_correct": true},
+            {"text": "d) the most", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "27. She worked as a teacher in ____ Africa.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) -", "is_correct": true},
+            {"text": "b) a", "is_correct": false},
+            {"text": "c) an", "is_correct": false},
+            {"text": "d) the", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "28. They live in ____ south of France.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) -", "is_correct": false},
+            {"text": "b) a", "is_correct": false},
+            {"text": "c) an", "is_correct": false},
+            {"text": "d) the", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "29. He ____ to work in his company's office in Shanghai.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) sent", "is_correct": false},
+            {"text": "b) was", "is_correct": false},
+            {"text": "c) was send", "is_correct": false},
+            {"text": "d) was sent", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "30. I ____ that I'm like my father.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) 'm told", "is_correct": true},
+            {"text": "b) told", "is_correct": false},
+            {"text": "c) was said", "is_correct": false},
+            {"text": "d) am said", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "31. The postman hasn't delivered the parcel ____.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) just", "is_correct": false},
+            {"text": "b) already", "is_correct": false},
+            {"text": "c) yet", "is_correct": true},
+            {"text": "d) never", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "32. My brother ____ passed his exams.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) just has", "is_correct": false},
+            {"text": "b) already has", "is_correct": false},
+            {"text": "c) yet", "is_correct": false},
+            {"text": "d) 's just", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "33. A lot of people think that when they ____, they'll have lots of free time, but often they don't.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) will retire", "is_correct": false},
+            {"text": "b) retire", "is_correct": true},
+            {"text": "c) retired", "is_correct": false},
+            {"text": "d) won't retire", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "34. What ____ happen if he doesn't get here in time?",
+          "type": "mcq",
+          "options": [
+            {"text": "a) will", "is_correct": true},
+            {"text": "b) it would", "is_correct": false},
+            {"text": "c) will it", "is_correct": false},
+            {"text": "d) it will", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "35. If you save some money, you ____ to worry any more.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) 'll have", "is_correct": false},
+            {"text": "b) don't", "is_correct": false},
+            {"text": "c) will", "is_correct": false},
+            {"text": "d) won't have", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "36. He ____ me my book would be a great success.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) told", "is_correct": true},
+            {"text": "b) said", "is_correct": false},
+            {"text": "c) say", "is_correct": false},
+            {"text": "d) tell", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "37. She told me she ____ buy me a new phone.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) don't", "is_correct": false},
+            {"text": "b) won't to", "is_correct": false},
+            {"text": "c) 'll", "is_correct": false},
+            {"text": "d) 'd", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "38. What would they do if they ____ have any money?",
+          "type": "mcq",
+          "options": [
+            {"text": "a) were", "is_correct": false},
+            {"text": "b) didn't", "is_correct": true},
+            {"text": "c) won't", "is_correct": false},
+            {"text": "d) 'd", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "39. I'd do more exercise if I ____ time.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) have", "is_correct": false},
+            {"text": "b) 'd have", "is_correct": false},
+            {"text": "c) 'll have", "is_correct": false},
+            {"text": "d) had", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "40. ____ be possible to reserve a table for tonight?",
+          "type": "mcq",
+          "options": [
+            {"text": "a) Can I", "is_correct": false},
+            {"text": "b) Could you", "is_correct": false},
+            {"text": "c) Would it", "is_correct": true},
+            {"text": "d) Will", "is_correct": false}
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "vocabulary",
+      "title": "Vocabulary Section",
+      "questions": [
+        {
+          "prompt": "1. ____ does that jacket cost?",
+          "type": "mcq",
+          "options": [
+            {"text": "a) How often", "is_correct": false},
+            {"text": "b) How long", "is_correct": false},
+            {"text": "c) How many", "is_correct": false},
+            {"text": "d) How much", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "2. ____ you like a coffee?",
+          "type": "mcq",
+          "options": [
+            {"text": "a) Will", "is_correct": false},
+            {"text": "b) Would", "is_correct": true},
+            {"text": "c) Did", "is_correct": false},
+            {"text": "d) Do", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "3. Nick ____ gets up at 7 o'clock and leaves for work at 8 o'clock. He does this every day from Monday to Friday.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) always", "is_correct": true},
+            {"text": "b) never", "is_correct": false},
+            {"text": "c) sometimes", "is_correct": false},
+            {"text": "d) hardly ever", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "4. I have never ____ a dangerous sport.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) do", "is_correct": false},
+            {"text": "b) made", "is_correct": false},
+            {"text": "c) make", "is_correct": false},
+            {"text": "d) done", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "5. We go shopping ____ month.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) every a", "is_correct": false},
+            {"text": "b) once", "is_correct": false},
+            {"text": "c) every two", "is_correct": false},
+            {"text": "d) twice a", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "6. He's studied Spanish ____ last year.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) since", "is_correct": true},
+            {"text": "b) the", "is_correct": false},
+            {"text": "c) at", "is_correct": false},
+            {"text": "d) -", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "7. We haven't seen them ____ years.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) at", "is_correct": false},
+            {"text": "b) since", "is_correct": false},
+            {"text": "c) for", "is_correct": true},
+            {"text": "d) ages", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "8. She's moving to Canada ____ she can study English.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) so that", "is_correct": true},
+            {"text": "b) so to", "is_correct": false},
+            {"text": "c) because to", "is_correct": false},
+            {"text": "d) in order to", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "9. He married the girl ____ used to sit next to him at school.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) who", "is_correct": true},
+            {"text": "b) which", "is_correct": false},
+            {"text": "c) what", "is_correct": false},
+            {"text": "d) whose", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "10. Can I try this coat ____, please?",
+          "type": "mcq",
+          "options": [
+            {"text": "a) in", "is_correct": false},
+            {"text": "b) on", "is_correct": true},
+            {"text": "c) to", "is_correct": false},
+            {"text": "d) up", "is_correct": false}
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "listening",
+      "title": "Listening Section",
+      "questions": [
+        {
+          "prompt": "1. Mary thinks the thief should go to prison for ____.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) three months", "is_correct": false},
+            {"text": "b) five years", "is_correct": false},
+            {"text": "c) 10 years", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "2. The woman thinks the new tennis teacher could be ____.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) English", "is_correct": false},
+            {"text": "b) Spanish", "is_correct": true},
+            {"text": "c) Scottish", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "3. The woman has just bought some ____.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) milk", "is_correct": true},
+            {"text": "b) food", "is_correct": false},
+            {"text": "c) books", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "4. The woman is buying a sweater for her ____.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) brother", "is_correct": false},
+            {"text": "b) boyfriend", "is_correct": false},
+            {"text": "c) father", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "5. The Globe Theatre is in ____.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) Queen's Street", "is_correct": false},
+            {"text": "b) Queen's Road", "is_correct": true},
+            {"text": "c) Prince Road", "is_correct": false}
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "reading",
+      "title": "Reading Section",
+      "passage": "Grandmother fails test again. A sixty-eight-year-old grandmother from the South Korean city of Jeonju has just failed her written driving test for the 771st time. The woman's name, which was given only as Cha, first took the written part of the exam in April 2005. At the time, she thought it would help if she had a car for her job. In the beginning, Cha went to the licence office almost every day. Now, she no longer works but still goes to the office once a week. The office said she's spent more than £1,600 on exam fees. 'You have to get at least sixty points to pass the written part,' said Kim Rahn, who wrote about Cha in the Korea Times, an English-language daily newspaper. 'She usually gets under fifty.' Bloggers have already responded to the news about Mrs Cha's misfortunes with comments that range from sympathy to anger. One wrote, 'There's a time in every person's life when, if they fail something over 700 times, they should stop.' Other bloggers complained about a system that allows people to take a driving test so many times. One man commented: 'It's not a very good system if you can take the test as often as you want. I mean, she might be a danger to other people even if she passes the test after the 1,001st try.' Mrs Cha seems to be ignoring the bloggers. She said that she'd be back for another attempt. If she passes, then she can begin to prepare for the practical test.",
+      "questions": [
+        {
+          "prompt": "1. Cha has taken the written test more than ____.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) 700 times", "is_correct": true},
+            {"text": "b) 800 times", "is_correct": false},
+            {"text": "c) 750 times", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "2. Cha usually takes the written test ____.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) four times a month", "is_correct": true},
+            {"text": "b) every day", "is_correct": false},
+            {"text": "c) occasionally", "is_correct": false}
+          ]
+        },
+        {
+          "prompt": "3. Bloggers have written ____ things about Cha.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) positive", "is_correct": false},
+            {"text": "b) negative", "is_correct": false},
+            {"text": "c) both positive and negative", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "4. One blogger thinks that Cha ____ drive a car if she passes the test.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) should", "is_correct": false},
+            {"text": "b) can", "is_correct": false},
+            {"text": "c) shouldn't", "is_correct": true}
+          ]
+        },
+        {
+          "prompt": "5. Mrs Cha ____ planning to give up trying to pass the written test.",
+          "type": "mcq",
+          "options": [
+            {"text": "a) isn't", "is_correct": true},
+            {"text": "b) is", "is_correct": false},
+            {"text": "c) will", "is_correct": false}
+          ]
+        }
+      ]
+    }
+  ]
+}

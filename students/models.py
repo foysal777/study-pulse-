@@ -120,20 +120,13 @@ class RecommendedCourse(models.Model):
     banner = models.ImageField(upload_to="recommended_courses/")
     course_calender = models.FileField(upload_to="course_calender_files/", blank=True)
     course_curriculum = models.FileField(upload_to="course_curriculum_files/", blank=True)
-    seat_limit = models.PositiveIntegerField(default=0, validators=[MaxValueValidator(40)])
-    resource_link = models.URLField(blank=True)
     teachers = models.ManyToManyField(
         "teachers.Teacher",
         related_name="recommended_courses",
         blank=True,
         verbose_name="Teachers",
     )
-    interest_type = models.ManyToManyField(
-        Intterest,
-        related_name="recommended_courses",
-        blank=True,
-        verbose_name="Interest type",
-    )
+   
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -142,9 +135,7 @@ class RecommendedCourse(models.Model):
     def __str__(self):
         return self.course_name
 
-    @property
-    def interest_type_display(self):
-        return ", ".join(self.interest_type.values_list("interest_name", flat=True))
+   
 
     @property
     def teachers_display(self):
