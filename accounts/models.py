@@ -57,6 +57,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_profile_completed = models.BooleanField(default=False)
     is_first_assement_completed = models.BooleanField(default=False)
     expo_push_token = models.CharField(max_length=255, blank=True, null=True)
+    is_push_notification = models.BooleanField(default=True)
     date_joined = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 

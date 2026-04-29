@@ -27,6 +27,7 @@ from accounts.serializers import (
     MeSuccessResponseSerializer,
     OtpVerifiedSuccessResponseSerializer,
     PushTokenUpdateSerializer,
+    TogglePushNotificationSerializer,
     AccountDeleteSerializer,
 )
 from accounts.utils import issue_and_send_otp
@@ -209,7 +210,7 @@ def sign_in(request):
             user.save(update_fields=["is_profile_completed", "updated_at"])
 
     # Send push notification (silent fail — won't break login if it fails)
-    if user.expo_push_token:
+    if user.expo_push_token and user.is_push_notification:
         send_expo_push_notification(
             push_tokens=user.expo_push_token,
             title="Login Successful 🎉",
@@ -423,6 +424,31 @@ def update_push_token(request):
     user.save(update_fields=["expo_push_token", "updated_at"])
 
     return success_response(message="Push token updated successfully.")
+
+
+@extend_schema(
+    tags=["Accounts Authentication"],
+    operation_id="accounts_toggle_push_notification",
+    request=TogglePushNotificationSerializer,
+    responses={
+        200: SuccessMessageResponseSerializer,
+        401: OpenApiResponse(response=ErrorResponseSerializer, description="Unauthenticated."),
+    },
+    description="Enable or disable push notifications for the student.",
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def toggle_push_notification(request):
+    serializer = TogglePushNotificationSerializer(data=request.data)
+    if not serializer.is_valid():
+        return error_response("Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    user = request.user
+    user.is_push_notification = serializer.validated_data["is_push_notification"]
+    user.save(update_fields=["is_push_notification", "updated_at"])
+
+    status_str = "enabled" if user.is_push_notification else "disabled"
+    return success_response(message=f"Push notifications {status_str} successfully.")
 
 
 @extend_schema(

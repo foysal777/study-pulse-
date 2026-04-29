@@ -642,8 +642,11 @@ def teacher_send_session_notice(request, slot_id):
     if not serializer.is_valid():
         return error_response("Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-    # Get all students who have booked this slot and have an expo_push_token
-    bookings = slot.bookings.select_related("student").filter(student__expo_push_token__isnull=False).exclude(student__expo_push_token="")
+    # Get all students who have booked this slot and have an expo_push_token and is_push_notification enabled
+    bookings = slot.bookings.select_related("student").filter(
+        student__expo_push_token__isnull=False,
+        student__is_push_notification=True
+    ).exclude(student__expo_push_token="")
     
     push_tokens = [booking.student.expo_push_token for booking in bookings]
     

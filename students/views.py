@@ -467,7 +467,7 @@ def assessment_submit(request, template_id):
         "skill_scores": skill_scores,
     }
 
-    if request.user.expo_push_token:
+    if request.user.expo_push_token and request.user.is_push_notification:
         status_msg = "Passed 🎉" if is_passed else "Keep practicing 💪"
         level_msg = f" (Level: {mapped_level})" if mapped_level else ""
         
