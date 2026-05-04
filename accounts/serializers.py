@@ -14,10 +14,34 @@ def _get_student_location_model():
 class UserSerializer(serializers.ModelSerializer):
     is_location = serializers.SerializerMethodField()
     profile = serializers.SerializerMethodField()
+    level_id = serializers.SerializerMethodField()
+    student_id = serializers.SerializerMethodField()
 
     def get_is_location(self, obj):
         StudentLocation = _get_student_location_model()
         return StudentLocation.objects.filter(student=obj).exists()
+
+    def get_student_id(self, obj):
+        if obj.role == "student":
+            try:
+                return obj.student_profile.id
+            except Exception:
+                pass
+        return None
+
+    def get_level_id(self, obj):
+        if obj.role == "student":
+            try:
+                from students.models import StudentAssessmentAttempt
+                latest_attempt = StudentAssessmentAttempt.objects.filter(
+                    student=obj, 
+                    status="evaluated"
+                ).order_by("-evaluated_at").first()
+                if latest_attempt:
+                    return latest_attempt.template_id
+            except Exception:
+                pass
+        return None
 
     def get_profile(self, obj):
         request = self.context.get("request")
@@ -34,7 +58,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "full_name", "email", "role", "is_email_verified", "is_profile_completed", "is_first_assement_completed", "is_location", "expo_push_token", "is_push_notification", "profile")
+        fields = ("id", "student_id", "full_name", "email", "role", "is_email_verified", "is_profile_completed", "is_first_assement_completed", "is_location", "expo_push_token", "is_push_notification", "profile", "level_id")
 
 
 class PushTokenUpdateSerializer(serializers.Serializer):

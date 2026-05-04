@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
-
+from django.utils import timezone
 from common.responses import error_response, success_response
 from accounts.models import UserRole
 from teachers.models import TeacherProfile
@@ -459,7 +459,7 @@ def teacher_booked_sessions(request):
     tags=["Teachers Sessions"],
     operation_id="teachers_slot_students_list",
     responses={200: TeacherStudentListSerializer(many=True)},
-    description="Fetch the list of students who booked a specific slot.",
+    description="Fetch the list of students who booked a specific slot.i can write anything here for test api",
 )
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -720,7 +720,7 @@ def teacher_dashboard(request):
 
     # 4. Curriculum list (Sessions with curriculum)
     # Showing slots that have a curriculum uploaded
-    curriculum_slots = TeacherSlot.objects.filter(teacher=profile, curriculum__isnull=False).exclude(curriculum="").order_by("-date")
+    curriculum_slots = TeacherSlot.objects.filter(teacher=profile, teachers_curriculum__isnull=False).exclude(teachers_curriculum="").order_by("-date")
 
     # 5. Upcoming sessions
     upcoming_sessions = TeacherSlot.objects.filter(
@@ -736,9 +736,177 @@ def teacher_dashboard(request):
             "week": week_sessions_count,
             "students": total_students,
         },
-        "teacher_room": profile.whatsapp_link,
+        "teacher_room": profile.teachers_room,
         "curriculum": TeacherBookedSlotSerializer(curriculum_slots, many=True, context={"request": request}).data,
         "upcoming_sessions": TeacherBookedSlotSerializer(upcoming_sessions, many=True, context={"request": request}).data,
     }
 
     return success_response(payload, message="Teacher dashboard data fetched successfully.")
+
+
+@extend_schema(
+    methods=["GET"],
+    tags=["Teachers Sessions"],
+    operation_id="teachers_student_progress",
+    responses={200: OpenApiResponse(description="Student progress fetched successfully.")},
+    description="Fetch a specific student's progress including assessment attempts and booking feedback.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def teacher_student_progress(request, student_id):
+    if request.user.role != UserRole.TEACHER:
+        return error_response("Only teachers can access this endpoint.", status_code=status.HTTP_403_FORBIDDEN)
+
+    from accounts.models import User
+    try:
+        student = User.objects.get(id=student_id, role=UserRole.STUDENT)
+    except User.DoesNotExist:
+        return error_response("Student not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+    from students.models import StudentProfile, StudentAssessmentAttempt, AssessmentAttemptStatus
+    from decimal import Decimal
+    
+    try:
+        profile = student.student_profile
+        student_name = profile.student_name if profile.student_name else student.full_name
+        profile_picture = request.build_absolute_uri(profile.profile_picture.url) if profile.profile_picture else None
+    except StudentProfile.DoesNotExist:
+        student_name = student.full_name
+        profile_picture = None
+
+    # Assessment Attempts
+    assessments = StudentAssessmentAttempt.objects.filter(
+        student=student,
+        status=AssessmentAttemptStatus.EVALUATED
+    ).order_by("-evaluated_at")
+    
+    assessment_progress = []
+    for att in assessments:
+        total_max = sum(q.marks for s in att.template.sections.all() for q in s.questions.all())
+        overall_pct = (att.total_score * Decimal("100") / total_max).quantize(Decimal("0.01")) if total_max > 0 else Decimal("0")
+        
+        assessment_progress.append({
+            "id": att.id,
+            "template_name": att.template.name,
+            "total_score": att.total_score,
+            "percentage": f"{overall_pct}%",
+            "is_passed": att.is_passed,
+            "evaluated_at": att.evaluated_at,
+        })
+
+    # Bookings with Marks (Session Progress)
+    bookings_with_marks = StudentBooking.objects.filter(
+        student=student,
+        marks__isnull=False
+    ).order_by("booked_at")
+    
+    session_progress = []
+    for i, b in enumerate(bookings_with_marks):
+        session_progress.append({
+            "id": b.id,
+            "test_name": f"Progress test {i + 1}",
+            "percentage": f"{b.marks}%",
+            "feedback": b.feedback if b.feedback else "Good progress!",
+            "date": b.slot.date,
+        })
+
+    payload = {
+        "student_name": student_name,
+        "profile_picture": profile_picture,
+        "assessments": assessment_progress,
+        "session_progress": session_progress,
+    }
+
+    return success_response(payload, message="Student progress fetched successfully.")
+
+
+@extend_schema(
+    methods=["GET"],
+    tags=["Teachers Sessions"],
+    operation_id="teachers_student_assessment_result",
+    responses={200: OpenApiResponse(description="Assessment result fetched successfully.")},
+    description="Get the detailed result (score breakdown) of a specific student's assessment attempt.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def teacher_student_assessment_result(request, attempt_id):
+    if request.user.role != UserRole.TEACHER:
+        return error_response("Only teachers can access this endpoint.", status_code=status.HTTP_403_FORBIDDEN)
+
+    from students.models import StudentAssessmentAttempt, AssessmentAttemptStatus, AssessmentLevelBand
+    from decimal import Decimal
+
+    try:
+        attempt = StudentAssessmentAttempt.objects.select_related("template", "student").get(
+            id=attempt_id,
+            status=AssessmentAttemptStatus.EVALUATED
+        )
+    except StudentAssessmentAttempt.DoesNotExist:
+        return error_response("Assessment attempt not found or not yet evaluated.", status_code=status.HTTP_404_NOT_FOUND)
+
+    template = attempt.template
+
+    # Calculate max scores per skill
+    skill_max = {}
+    for section in template.sections.all():
+        skill = section.skill
+        section_max = sum(q.marks for q in section.questions.all())
+        skill_max[skill] = skill_max.get(skill, Decimal("0")) + section_max
+
+    total_max = sum(skill_max.values(), Decimal("0"))
+    overall_pct = (attempt.total_score * Decimal("100") / total_max).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP) if total_max > 0 else Decimal("0")
+
+    # Find mapped level
+    mapped_level = None
+    level_band = AssessmentLevelBand.objects.filter(
+        template=template,
+        min_score__lte=overall_pct,
+        max_score__gte=overall_pct
+    ).first()
+    
+    if level_band:
+        mapped_level = level_band.get_label_display()
+
+    skill_field_map = {
+        "reading": attempt.reading_score,
+        "listening": attempt.listening_score,
+        "writing": attempt.writing_score,
+        "grammar": attempt.grammar_score,
+        "vocabulary": attempt.vocabulary_score,
+    }
+
+    skill_scores = []
+    for skill, max_s in skill_max.items():
+        earned = skill_field_map.get(skill) or Decimal("0")
+        pct = (earned * Decimal("100") / max_s).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP) if max_s > 0 else Decimal("0")
+        skill_scores.append({
+            "skill": skill,
+            "score": earned,
+            "max_score": max_s,
+            "percentage": pct,
+        })
+
+    try:
+        profile = attempt.student.student_profile
+        student_name = profile.student_name if profile.student_name else attempt.student.full_name
+        profile_picture = request.build_absolute_uri(profile.profile_picture.url) if profile.profile_picture else None
+    except Exception:
+        student_name = attempt.student.full_name
+        profile_picture = None
+
+    result = {
+        "student_name": student_name,
+        "profile_picture": profile_picture,
+        "attempt_id": attempt.id,
+        "template_name": template.name,
+        "total_score": attempt.total_score,
+        "max_total_score": total_max,
+        "overall_percentage": overall_pct,
+        "is_passed": attempt.is_passed,
+        "pass_percentage": template.pass_percentage,
+        "mapped_level": mapped_level,
+        "skill_scores": skill_scores,
+    }
+
+    return success_response(result, message="Assessment result fetched successfully.")
+

@@ -45,7 +45,7 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
             "id", "name", "phone_number", "age", "gender",
             "qualification", "experience", "profile_picture",
             "teaching_medium", "courses_classes_taught",
-            "other_courses_classes", "offline_location", "whatsapp_link",
+            "other_courses_classes", "offline_location", "teachers_room",
             "created_at", "updated_at"
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
@@ -101,13 +101,25 @@ class SessionListSerializer(serializers.ModelSerializer):
 
 class TeacherBookedSlotSerializer(serializers.ModelSerializer):
     whatsapp_room_link = serializers.ReadOnlyField(source='accessible_whatsapp_room_link')
+    slot_id = serializers.IntegerField(source='id', read_only=True)
+    availablity_id = serializers.SerializerMethodField()
 
     class Meta:
         model = TeacherSlot
         fields = [
-            "id", "title", "date", "start_time", "end_time", "mode", 
+            "id", "slot_id", "availablity_id", "title", "date", "start_time", "end_time", "mode", 
             "booked_students", "max_students", "whatsapp_room_link", "teachers_curriculum"
         ]
+
+    def get_availablity_id(self, obj):
+        day_of_week = obj.date.strftime("%A")
+        avail = TeacherAvailability.objects.filter(
+            teacher=obj.teacher,
+            day_of_week=day_of_week,
+            start_time=obj.start_time,
+            mode=obj.mode
+        ).first()
+        return avail.id if avail else None
 
 
 class TeacherStudentListSerializer(serializers.ModelSerializer):

@@ -187,7 +187,7 @@ class TeacherProfile(models.Model):
     courses_classes_taught = models.CharField(max_length=255, blank=True, null=True)
     other_courses_classes = models.TextField(blank=True, null=True)
     offline_location = models.TextField(blank=True, null=True)
-    whatsapp_link = models.URLField(blank=True, null=True, help_text="WhatsApp group link for teacher's room")
+    teachers_room = models.URLField(blank=True, null=True, help_text="WhatsApp group link for teacher's room")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

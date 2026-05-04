@@ -10,6 +10,7 @@ urlpatterns = [
     path("assessments/levels/", views.assessment_levels, name="assessment_levels"),
     path("assessments/levels/<int:template_id>/", views.assessment_detail, name="assessment_detail"),
     path("assessments/levels/<int:template_id>/submit/", views.assessment_submit, name="assessment_submit"),
+    path("assessments/<int:attempt_id>/result/", views.assessment_result, name="assessment_result"),
     path("dashboard/", views.student_dashboard, name="student_dashboard"),
     path("recommended-course/", views.get_recommended_course, name="get_recommended_course"),
     path("general-info/", views.get_general_info, name="get_general_info"),

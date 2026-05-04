@@ -19,4 +19,6 @@ urlpatterns = [
     path("admin-notification-count/", views.admin_notification_count, name="admin_notification_count"),
     path("slots/<int:slot_id>/send-notice/", views.teacher_send_session_notice, name="teacher_send_session_notice"),
     path("dashboard/", views.teacher_dashboard, name="teacher_dashboard"),
+    path("students/<int:student_id>/progress/", views.teacher_student_progress, name="teacher_student_progress"),
+    path("assessments/<int:attempt_id>/result/", views.teacher_student_assessment_result, name="teacher_student_assessment_result"),
 ]

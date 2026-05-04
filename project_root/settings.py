@@ -181,7 +181,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-
+CSRF_TRUSTED_ORIGINS = [
+    'https://grace-edition-prominent-blog.trycloudflare.com'
+]
 
 ROOT_URLCONF = 'project_root.urls'
 

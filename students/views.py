@@ -2,7 +2,7 @@ from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 from decimal import Decimal, ROUND_HALF_UP
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema, OpenApiParameter
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -770,6 +770,7 @@ def get_general_info(request):
 
 
 @extend_schema(
+    methods=["GET"],
     summary="Get Student Notifications",
     responses={
         200: OpenApiResponse(
@@ -778,7 +779,17 @@ def get_general_info(request):
         ),
     },
 )
-@api_view(["GET"])
+@extend_schema(
+    methods=["DELETE"],
+    summary="Delete Student Notifications",
+    parameters=[
+        OpenApiParameter(name="id", description="Optional ID of a specific notification to delete. If not provided, all notifications are deleted.", required=False, type=int),
+    ],
+    responses={
+        200: OpenApiResponse(description="Notification(s) deleted successfully."),
+    },
+)
+@api_view(["GET", "DELETE"])
 @permission_classes([IsAuthenticated])
 def get_student_notifications(request):
     if request.user.role != UserRole.STUDENT:
@@ -787,6 +798,15 @@ def get_student_notifications(request):
             "Only students can access this info.",
             status.HTTP_403_FORBIDDEN,
         )
+
+    if request.method == "DELETE":
+        notification_id = request.query_params.get("id")
+        if notification_id:
+            StudentNotification.objects.filter(student=request.user, id=notification_id).delete()
+            return success_response(message="Notification deleted successfully.")
+        else:
+            StudentNotification.objects.filter(student=request.user).delete()
+            return success_response(message="All notifications deleted successfully.")
 
     notifications = StudentNotification.objects.filter(student=request.user)
     serializer = StudentNotificationSerializer(notifications, many=True)
@@ -798,3 +818,96 @@ def get_student_notifications(request):
         serializer.data,
         message="Notifications retrieved successfully."
     )
+
+
+@extend_schema(
+    methods=["GET"],
+    tags=["Students Assessment"],
+    operation_id="students_assessment_result",
+    responses={200: AssessmentResultSuccessResponseSerializer},
+    description="Get the detailed result (score breakdown) of a specific assessment attempt.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def assessment_result(request, attempt_id):
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Only student users can access this endpoint.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    try:
+        attempt = StudentAssessmentAttempt.objects.select_related("template").get(
+            id=attempt_id,
+            student=request.user,
+            status=AssessmentAttemptStatus.EVALUATED
+        )
+    except StudentAssessmentAttempt.DoesNotExist:
+        return error_response("Assessment attempt not found or not yet evaluated.", status_code=status.HTTP_404_NOT_FOUND)
+
+    template = attempt.template
+
+    # Calculate max scores per skill
+    skill_max = {}
+    for section in template.sections.all():
+        skill = section.skill
+        # Need to sum marks of all active questions in this section
+        section_max = sum(q.marks for q in section.questions.all())
+        skill_max[skill] = skill_max.get(skill, Decimal("0")) + section_max
+
+    total_max = sum(skill_max.values(), Decimal("0"))
+    overall_pct = (attempt.total_score * Decimal("100") / total_max).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP) if total_max > 0 else Decimal("0")
+
+    # Find mapped level
+    mapped_level = None
+    level_band = AssessmentLevelBand.objects.filter(
+        template=template,
+        min_score__lte=overall_pct,
+        max_score__gte=overall_pct
+    ).first()
+    
+    if level_band:
+        mapped_level = level_band.get_label_display()
+
+    skill_field_map = {
+        "reading": attempt.reading_score,
+        "listening": attempt.listening_score,
+        "writing": attempt.writing_score,
+        "grammar": attempt.grammar_score,
+        "vocabulary": attempt.vocabulary_score,
+    }
+
+    skill_scores = []
+    for skill, max_s in skill_max.items():
+        earned = skill_field_map.get(skill) or Decimal("0")
+        pct = (earned * Decimal("100") / max_s).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP) if max_s > 0 else Decimal("0")
+        skill_scores.append({
+            "skill": skill,
+            "score": earned,
+            "max_score": max_s,
+            "percentage": pct,
+        })
+
+    try:
+        profile = request.user.student_profile
+        student_name = profile.student_name if profile.student_name else request.user.full_name
+        profile_picture = request.build_absolute_uri(profile.profile_picture.url) if profile.profile_picture else None
+    except Exception:
+        student_name = request.user.full_name
+        profile_picture = None
+
+    result = {
+        "student_name": student_name,
+        "profile_picture": profile_picture,
+        "attempt_id": attempt.id,
+        "template_name": template.name,
+        "total_score": attempt.total_score,
+        "max_total_score": total_max,
+        "overall_percentage": overall_pct,
+        "is_passed": attempt.is_passed,
+        "pass_percentage": template.pass_percentage,
+        "mapped_level": mapped_level,
+        "skill_scores": skill_scores,
+    }
+
+    return success_response(result, message="Assessment result fetched successfully.")
