@@ -110,6 +110,11 @@ UNFOLD = {
                         "link": "/admin/students/assessmenttemplate/",
                     },
                     {
+                        "title": "Import Assessment",
+                        "icon": "upload_file",
+                        "link": "/admin/students/assessmenttemplateimporter/",
+                    },
+                    {
                         "title": "Student Assessment Attempts",
                         "icon": "history_edu",
                         "link": "/admin/students/studentassessmentattempt/",
@@ -153,6 +158,21 @@ UNFOLD = {
                         "title": "Teachers Locations",
                         "icon": "location_on",
                         "link": "/admin/teachers/teacherslocation/",
+                    },
+                    {
+                        "title": "Recommended Courses",
+                        "icon": "menu_book",
+                        "link": "/admin/students/recommendedcourse/",
+                    },
+                    {
+                        "title": "Session List",
+                        "icon": "view_list",
+                        "link": "/admin/teachers/sessionlist/",
+                    },
+                    {
+                        "title": "General Info",
+                        "icon": "info",
+                        "link": "/admin/teachers/generalinfo/",
                     },
                 ],
             },

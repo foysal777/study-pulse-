@@ -74,7 +74,7 @@ class TeacherProfileAdmin(PlaceholderAdminMixin, ModelAdmin):
         "user", "name", "phone_number", "age", "gender", 
         "qualification", "experience", "profile_picture", 
         "teaching_medium", "courses_classes_taught", 
-        "other_courses_classes", "offline_location", "whatsapp_link"
+        "other_courses_classes", "offline_location", "teachers_room"
     )
 
 

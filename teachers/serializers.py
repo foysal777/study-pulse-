@@ -125,24 +125,38 @@ class TeacherBookedSlotSerializer(serializers.ModelSerializer):
 class TeacherStudentListSerializer(serializers.ModelSerializer):
     student_name = serializers.SerializerMethodField()
     student_email = serializers.EmailField(source="student.email", read_only=True)
+    profile_picture = serializers.SerializerMethodField()
+    date = serializers.DateField(source="slot.date", read_only=True)
+    time = serializers.TimeField(source="slot.start_time", read_only=True)
+    mode = serializers.CharField(source="slot.mode", read_only=True)
+    student_id = serializers.IntegerField(source="student.id", read_only=True)
     
     class Meta:
         model = StudentBooking
-        fields = ["id", "student_name", "student_email", "marks", "feedback", "booked_at"]
+        fields = ["id", "student_id", "student_name", "student_email", "profile_picture", "date", "time", "mode", "marks", "feedback", "booked_at"]
 
     def get_student_name(self, obj):
         if hasattr(obj.student, 'student_profile') and obj.student.student_profile.student_name:
             return obj.student.student_profile.student_name
         return obj.student.full_name
 
+    def get_profile_picture(self, obj):
+        request = self.context.get('request')
+        if hasattr(obj.student, 'student_profile') and obj.student.student_profile.profile_picture:
+            if request:
+                return request.build_absolute_uri(obj.student.student_profile.profile_picture.url)
+            return obj.student.student_profile.profile_picture.url
+        return None
+
 
 class TeacherFeedbackSerializer(serializers.ModelSerializer):
+    comment = serializers.CharField(source='feedback', required=True)
+
     class Meta:
         model = StudentBooking
-        fields = ["marks", "feedback"]
+        fields = ["marks", "comment"]
         extra_kwargs = {
             "marks": {"required": True},
-            "feedback": {"required": True},
         }
 
 

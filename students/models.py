@@ -379,3 +379,18 @@ class StudentNotification(models.Model):
 
     def __str__(self):
         return f"{self.student.full_name} - {self.title}"
+
+class AssessmentTemplateImporter(models.Model):
+    gdoc_url = models.URLField(
+        max_length=500,
+        help_text="Paste the public Google Doc URL here. It must be shared as 'Anyone with the link can view'."
+    )
+    status = models.TextField(blank=True, help_text="Status or errors of the import process.")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Assessment Importer"
+        verbose_name_plural = "Assessment Importers"
+
+    def __str__(self):
+        return f"Import from {self.gdoc_url}"

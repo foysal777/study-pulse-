@@ -457,24 +457,54 @@ def teacher_booked_sessions(request):
 @extend_schema(
     methods=["GET"],
     tags=["Teachers Sessions"],
-    operation_id="teachers_slot_students_list",
+    operation_id="teachers_pending_students_list",
+    parameters=[
+        OpenApiParameter(name="search", description="Search by student name", required=False, type=OpenApiTypes.STR),
+        OpenApiParameter(name="date", description="Filter by date (YYYY-MM-DD)", required=False, type=OpenApiTypes.DATE),
+        OpenApiParameter(name="mode", description="Filter by mode (online/offline)", required=False, type=OpenApiTypes.STR),
+        OpenApiParameter(name="time", description="Filter by time (HH:MM or HH:MM:SS)", required=False, type=OpenApiTypes.TIME),
+    ],
     responses={200: TeacherStudentListSerializer(many=True)},
-    description="Fetch the list of students who booked a specific slot.i can write anything here for test api",
+    description="Fetch the list of students for the teacher who have pending assessments (no feedback yet). Supports search by name, date, mode, and time.",
 )
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
-def teacher_slot_students(request, slot_id):
+def teacher_pending_students(request):
     if request.user.role != UserRole.TEACHER:
         return error_response("Only teachers can access this endpoint.", status_code=status.HTTP_403_FORBIDDEN)
 
-    try:
-        slot = TeacherSlot.objects.get(id=slot_id, teacher__user=request.user)
-    except TeacherSlot.DoesNotExist:
-        return error_response("Slot not found or you don't have access to it.", status_code=status.HTTP_404_NOT_FOUND)
+    # All bookings for the logged-in teacher that haven't received feedback/marks
+    bookings = StudentBooking.objects.filter(
+        slot__teacher__user=request.user,
+        marks__isnull=True, 
+        feedback__isnull=True
+    ).select_related("student", "slot")
 
-    # Show only students who haven't received feedback yet
-    bookings = slot.bookings.filter(marks__isnull=True, feedback__isnull=True).select_related("student")
-    serializer = TeacherStudentListSerializer(bookings, many=True)
+    # Apply filters
+    search_query = request.query_params.get("search", "").strip()
+    if search_query:
+        from django.db.models import Q
+        bookings = bookings.filter(
+            Q(student__full_name__icontains=search_query) | 
+            Q(student__student_profile__student_name__icontains=search_query)
+        )
+
+    date_filter = request.query_params.get("date")
+    if date_filter:
+        bookings = bookings.filter(slot__date=date_filter)
+
+    mode_filter = request.query_params.get("mode")
+    if mode_filter:
+        bookings = bookings.filter(slot__mode=mode_filter.lower())
+
+    time_filter = request.query_params.get("time")
+    if time_filter:
+        bookings = bookings.filter(slot__start_time=time_filter)
+
+    # Order by booked_at descending or slot date
+    bookings = bookings.order_by("-slot__date", "-slot__start_time")
+
+    serializer = TeacherStudentListSerializer(bookings, many=True, context={"request": request})
     return success_response(serializer.data, message="Student list fetched successfully.")
 
 
@@ -484,24 +514,69 @@ def teacher_slot_students(request, slot_id):
     operation_id="teachers_student_feedback",
     request=TeacherFeedbackSerializer,
     responses={200: TeacherStudentListSerializer},
-    description="Provide feedback and marks for a specific student booking.",
+    description="Provide feedback and marks for a specific student's pending assessment.",
 )
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def teacher_student_feedback(request, booking_id):
+def teacher_student_feedback(request, student_id):
     if request.user.role != UserRole.TEACHER:
         return error_response("Only teachers can access this endpoint.", status_code=status.HTTP_403_FORBIDDEN)
 
-    try:
-        booking = StudentBooking.objects.get(id=booking_id, slot__teacher__user=request.user)
-    except StudentBooking.DoesNotExist:
-        return error_response("Booking not found or you don't have access to it.", status_code=status.HTTP_404_NOT_FOUND)
+    # Find pending booking(s) for this student and teacher
+    bookings = StudentBooking.objects.filter(
+        student_id=student_id, 
+        slot__teacher__user=request.user,
+        marks__isnull=True,
+        feedback__isnull=True
+    ).order_by('booked_at')
+
+    booking = bookings.first()
+    if not booking:
+        return error_response("No pending assessment found for this student.", status_code=status.HTTP_404_NOT_FOUND)
 
     serializer = TeacherFeedbackSerializer(booking, data=request.data, partial=True)
     if serializer.is_valid():
         serializer.save()
-        return success_response(TeacherStudentListSerializer(booking).data, message="Feedback submitted successfully.")
+        return success_response(TeacherStudentListSerializer(booking, context={"request": request}).data, message="Feedback submitted successfully.")
     return error_response("Invalid data.", errors=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    methods=["DELETE"],
+    tags=["Teachers Sessions"],
+    operation_id="teachers_remove_student",
+    responses={200: OpenApiResponse(description="Student removed successfully.")},
+    description="Teacher removes a student from pending assessments by student ID. This deletes their pending booking(s) and decrements slot count.",
+)
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def teacher_remove_student(request, student_id):
+    if request.user.role != UserRole.TEACHER:
+        return error_response("Only teachers can access this endpoint.", status_code=status.HTTP_403_FORBIDDEN)
+
+    try:
+        with transaction.atomic():
+            # Find all pending bookings for this student and this teacher
+            bookings = StudentBooking.objects.select_related("slot").filter(
+                student_id=student_id, 
+                slot__teacher__user=request.user,
+                marks__isnull=True,
+                feedback__isnull=True
+            )
+            
+            if not bookings.exists():
+                return error_response("No pending booking found for this student.", status_code=status.HTTP_404_NOT_FOUND)
+            
+            # Decrement booked_students for each slot
+            for booking in bookings:
+                TeacherSlot.objects.filter(pk=booking.slot.pk).update(booked_students=F("booked_students") - 1)
+            
+            # Delete bookings
+            deleted_count, _ = bookings.delete()
+            
+            return success_response(message=f"Student removed from the list successfully. Deleted {deleted_count} pending booking(s).")
+    except Exception as e:
+        return error_response(f"Removal failed: {str(e)}", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @extend_schema(

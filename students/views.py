@@ -677,7 +677,12 @@ def get_recommended_course(request):
     elif "intermediate" in template_name:
         recommended_name = "Pre-Intermediate" if overall_percentage < 70 else "Intermediate"
     elif "elementary" in template_name:
-        recommended_name = "Elementary" if overall_percentage < 70 else "Pre-Intermediate"
+        if overall_percentage < 50:
+            recommended_name = "Starter"
+        elif overall_percentage < 70:
+            recommended_name = "Elementary"
+        else:
+            recommended_name = "Pre-Intermediate"
 
     if not recommended_name:
         return error_response(
@@ -746,7 +751,12 @@ def get_general_info(request):
         elif "intermediate" in template_name:
             recommended_name = "Pre-Intermediate" if overall_percentage < 70 else "Intermediate"
         elif "elementary" in template_name:
-            recommended_name = "Elementary" if overall_percentage < 70 else "Pre-Intermediate"
+            if overall_percentage < 50:
+                recommended_name = "Starter"
+            elif overall_percentage < 70:
+                recommended_name = "Elementary"
+            else:
+                recommended_name = "Pre-Intermediate"
 
         if recommended_name:
             info_obj = general_info.filter(calender_type__icontains=recommended_name).first()
