@@ -515,7 +515,7 @@ def student_dashboard(request):
             "date": slot.date.strftime("%a, %b %d"),
             "time": slot.start_time.strftime("%I:%M %p"),
             "mode": slot.mode,
-            "whatsapp_room_link": slot.accessible_whatsapp_room_link,
+            "meeting_link": slot.accessible_meeting_link,
         }
 
     # 3. My Progress (Bookings with marks)

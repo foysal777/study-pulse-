@@ -88,19 +88,19 @@ class StudentBookingSerializer(serializers.ModelSerializer):
 
 
 class SessionListSerializer(serializers.ModelSerializer):
-    whatsapp_room_link = serializers.ReadOnlyField(source='accessible_whatsapp_room_link')
+    meeting_link = serializers.ReadOnlyField(source='accessible_meeting_link')
 
     class Meta:
         model = SessionList
         fields = [
             "id", "teacher_name", "date_time", "number_of_students", 
-            "whatsapp_room_link", "send_notification", "cancel", "created_at"
+            "meeting_link", "send_notification", "cancel", "created_at"
         ]
         read_only_fields = ["id", "created_at"]
 
 
 class TeacherBookedSlotSerializer(serializers.ModelSerializer):
-    whatsapp_room_link = serializers.ReadOnlyField(source='accessible_whatsapp_room_link')
+    meeting_link = serializers.ReadOnlyField(source='accessible_meeting_link')
     slot_id = serializers.IntegerField(source='id', read_only=True)
     availablity_id = serializers.SerializerMethodField()
 
@@ -108,7 +108,7 @@ class TeacherBookedSlotSerializer(serializers.ModelSerializer):
         model = TeacherSlot
         fields = [
             "id", "slot_id", "availablity_id", "title", "date", "start_time", "end_time", "mode", 
-            "booked_students", "max_students", "whatsapp_room_link", "teachers_curriculum"
+            "booked_students", "max_students", "meeting_link", "teachers_curriculum"
         ]
 
     def get_availablity_id(self, obj):

@@ -18,8 +18,21 @@ class UserSerializer(serializers.ModelSerializer):
     student_id = serializers.SerializerMethodField()
 
     def get_is_location(self, obj):
-        StudentLocation = _get_student_location_model()
-        return StudentLocation.objects.filter(student=obj).exists()
+        if obj.role == "student":
+            StudentLocation = _get_student_location_model()
+            return StudentLocation.objects.filter(student=obj).exists()
+        elif obj.role == "teacher":
+            try:
+                from teachers.models import TeachersLocation
+                has_geo = TeachersLocation.objects.filter(teacher__user=obj).exists()
+                if has_geo:
+                    return True
+                # Fallback to checking offline_location in profile
+                profile = getattr(obj, "teacher_profile", None)
+                return bool(profile and profile.offline_location)
+            except Exception:
+                return False
+        return False
 
     def get_student_id(self, obj):
         if obj.role == "student":

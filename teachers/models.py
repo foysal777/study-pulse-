@@ -61,22 +61,22 @@ class SessionList(models.Model):
     )
     date_time = models.DateTimeField()
     number_of_students = models.PositiveIntegerField()
-    whatsapp_room_link = models.URLField(blank=True, null=True, verbose_name="WhatsApp Room Link")
+    meeting_link = models.URLField(blank=True, null=True, verbose_name="Meeting Link")
     send_notification = models.TextField(blank=True, verbose_name="Send notification")
     cancel = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     @property
-    def accessible_whatsapp_room_link(self):
-        if not self.whatsapp_room_link:
+    def accessible_meeting_link(self):
+        if not self.meeting_link:
             return None
         
         # 5 minutes before the session starts
         visibility_time = self.date_time - timedelta(minutes=5)
         
         if timezone.now() >= visibility_time:
-            return self.whatsapp_room_link
+            return self.meeting_link
         return None
 
     class Meta:
@@ -262,14 +262,14 @@ class TeacherSlot(models.Model):
     mode = models.CharField(max_length=10, choices=SlotMode.choices)
     max_students = models.PositiveIntegerField(default=40)
     booked_students = models.PositiveIntegerField(default=0)
-    whatsapp_room_link = models.URLField(blank=True, null=True, verbose_name="WhatsApp Room Link")
+    meeting_link = models.URLField(blank=True, null=True, verbose_name="Meeting Link")
     title = models.CharField(max_length=255, default="General Class")
     teachers_curriculum = models.FileField(upload_to="curriculums/", blank=True, null=True)
 
     @property
-    def accessible_whatsapp_room_link(self):
+    def accessible_meeting_link(self):
         from datetime import datetime
-        if not self.whatsapp_room_link:
+        if not self.meeting_link:
             return None
         
         # 5 minutes before the session starts
@@ -278,7 +278,7 @@ class TeacherSlot(models.Model):
         visibility_time = session_start - timedelta(minutes=5)
         
         if timezone.now() >= visibility_time:
-            return self.whatsapp_room_link
+            return self.meeting_link
         return None
 
     class Meta:

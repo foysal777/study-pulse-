@@ -24,7 +24,12 @@ SECRET_KEY = 'django-insecure-$5h3i2#$qg#58b1)j00cluqvel2&rp_e^fp**(8f&xyl)!$l71
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
 CSRF_TRUSTED_ORIGINS = [
+    'https://formal-springer-chances-solely.trycloudflare.com',
+    'https://grace-edition-prominent-blog.trycloudflare.com',
     'http://127.0.0.1:8000',
     'http://127.0.0.1:7090',
     'http://127.0.0.1:6565',
@@ -201,9 +206,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CSRF_TRUSTED_ORIGINS = [
-    'https://grace-edition-prominent-blog.trycloudflare.com'
-]
 
 ROOT_URLCONF = 'project_root.urls'
 
