@@ -1,4 +1,6 @@
 from django.db import models
+from django.core.validators import FileExtensionValidator
+
 
 
 class Policy(models.Model):
@@ -24,3 +26,21 @@ class HelpSupport(models.Model):
 
     def __str__(self):
         return f"Support: {self.email}"
+
+
+class PlayStoreQRCode(models.Model):
+    pdf_file = models.FileField(
+        upload_to='play_store_qr/',
+        validators=[FileExtensionValidator(allowed_extensions=['pdf'])],
+        help_text="Only PDF files are allowed."
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Play Store QR Code"
+        verbose_name_plural = "Play Store QR Codes"
+
+    def __str__(self):
+        return f"QR Code PDF uploaded on {self.uploaded_at.strftime('%Y-%m-%d')}"
+

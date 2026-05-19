@@ -115,10 +115,11 @@ UNFOLD = {
                         "link": "/admin/students/assessmenttemplate/",
                     },
                     {
-                        "title": "Import Assessment",
-                        "icon": "upload_file",
-                        "link": "/admin/students/assessmenttemplateimporter/",
+                        "title": "Assessment Questions",
+                        "icon": "quiz",
+                        "link": "/admin/students/assessmentquestion/",
                     },
+                    
                     {
                         "title": "Student Assessment Attempts",
                         "icon": "history_edu",
@@ -165,7 +166,7 @@ UNFOLD = {
                         "link": "/admin/teachers/teacherslocation/",
                     },
                     {
-                        "title": "Recommended Courses",
+                        "title": "Promotional Banner",
                         "icon": "menu_book",
                         "link": "/admin/students/recommendedcourse/",
                     },
@@ -178,6 +179,26 @@ UNFOLD = {
                         "title": "General Info",
                         "icon": "info",
                         "link": "/admin/teachers/generalinfo/",
+                    },
+                ],
+            },
+            {
+                "title": "Support",
+                "items": [
+                    {
+                        "title": "Policies",
+                        "icon": "policy",
+                        "link": "/admin/support/policy/",
+                    },
+                    {
+                        "title": "Help & Support",
+                        "icon": "support_agent",
+                        "link": "/admin/support/helpsupport/",
+                    },
+                    {
+                        "title": "Play Store QR Codes",
+                        "icon": "qr_code_2",
+                        "link": "/admin/support/playstoreqrcode/",
                     },
                 ],
             },

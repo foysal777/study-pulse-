@@ -1,7 +1,5 @@
 from django.urls import path
-
 from accounts import views
-
 app_name = "accounts"
 
 urlpatterns = [
@@ -18,13 +16,4 @@ urlpatterns = [
     path("delete-account/", views.delete_account, name="delete_account"),
     path("me/", views.me, name="me"),
 ]
-
-
-
-
-
-
-
-
-
 

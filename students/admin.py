@@ -17,7 +17,7 @@ from students.models import (
     StudentAssessmentAttempt,
     StudentProfile,
     StudentLocation,
-    AssessmentTemplateImporter,
+    # AssessmentTemplateImporter,
 )
 
 
@@ -595,30 +595,30 @@ class StudentLocationAdmin(PlaceholderAdminMixin, ModelAdmin):
     readonly_fields = ("updated_at",)
 
 
-@admin.register(AssessmentTemplateImporter)
-class AssessmentTemplateImporterAdmin(PlaceholderAdminMixin, ModelAdmin):
-    list_display = ("id", "gdoc_url", "created_at", "status_preview")
-    readonly_fields = ("status", "created_at")
+# @admin.register(AssessmentTemplateImporter)
+# class AssessmentTemplateImporterAdmin(PlaceholderAdminMixin, ModelAdmin):
+#     list_display = ("id", "gdoc_url", "created_at", "status_preview")
+#     readonly_fields = ("status", "created_at")
 
-    def status_preview(self, obj):
-        if not obj.status:
-            return "-"
-        return obj.status[:50] + ("..." if len(obj.status) > 50 else "")
+#     def status_preview(self, obj):
+#         if not obj.status:
+#             return "-"
+#         return obj.status[:50] + ("..." if len(obj.status) > 50 else "")
 
-    status_preview.short_description = "Status"
+#     status_preview.short_description = "Status"
 
-    def save_model(self, request, obj, form, change):
-        from django.core.management import call_command
-        from io import StringIO
-        import traceback
+#     def save_model(self, request, obj, form, change):
+#         from django.core.management import call_command
+#         from io import StringIO
+#         import traceback
 
-        is_new = obj.pk is None
-        super().save_model(request, obj, form, change)
+#         is_new = obj.pk is None
+#         super().save_model(request, obj, form, change)
 
-        out = StringIO()
-        try:
-            call_command("import_from_gdoc", obj.gdoc_url, stdout=out, stderr=out)
-            obj.status = out.getvalue()
-        except Exception as e:
-            obj.status = f"Error: {str(e)}\n\n{traceback.format_exc()}\n\n{out.getvalue()}"
-        obj.save(update_fields=["status"])
+#         out = StringIO()
+#         try:
+#             call_command("import_from_gdoc", obj.gdoc_url, stdout=out, stderr=out)
+#             obj.status = out.getvalue()
+#         except Exception as e:
+#             obj.status = f"Error: {str(e)}\n\n{traceback.format_exc()}\n\n{out.getvalue()}"
+#         obj.save(update_fields=["status"])

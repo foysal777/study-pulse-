@@ -4,8 +4,10 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
+from django.shortcuts import redirect
 from unfold.admin import ModelAdmin
-from unfold.decorators import display
+from unfold.decorators import display, action
+from unfold.enums import ActionVariant
 
 from teachers.models import (
     GeneralInfo, PendingRequest, SessionList, Teacher, TeacherLevel,
@@ -909,6 +911,14 @@ class TeacherSlotAdmin(ModelAdmin):
     search_fields = ("teacher__name", "date", "title")
     autocomplete_fields = ("teacher",)
     fields = ("teacher", "title", "date", "start_time", "end_time", "mode", "max_students", "booked_students", "meeting_link", "teachers_curriculum")
+    actions_list = ["add_teacher_slot_custom"]
+    actions_list_hide_default = True
+
+    @action(description="Add teacher slot", variant=ActionVariant.PRIMARY)
+    def add_teacher_slot_custom(self, request):
+        return redirect("admin:teachers_teacherslot_add")
+
+
 
 
 @admin.register(StudentBooking)

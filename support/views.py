@@ -3,8 +3,10 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from common.responses import success_response, error_response
-from support.models import Policy, HelpSupport
-from support.serializers import PolicySerializer, HelpSupportSerializer
+from support.models import Policy, HelpSupport, PlayStoreQRCode
+
+from support.serializers import PolicySerializer, HelpSupportSerializer, PlayStoreQRCodeSerializer
+
 
 
 @extend_schema(
@@ -35,3 +37,20 @@ def help_support_view(request):
         return error_response("Support info not configured.", status_code=status.HTTP_404_NOT_FOUND)
     serializer = HelpSupportSerializer(support)
     return success_response(serializer.data, message="Help & support info fetched successfully.")
+
+
+@extend_schema(
+    tags=["Support & Policies"],
+    operation_id="support_play_store_qr",
+    responses={200: PlayStoreQRCodeSerializer},
+    description="Fetch Play Store QR Code PDF.",
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def play_store_qr_view(request):
+    qr_code = PlayStoreQRCode.objects.first()
+    if not qr_code:
+        return error_response("QR Code not found.", status_code=status.HTTP_404_NOT_FOUND)
+    serializer = PlayStoreQRCodeSerializer(qr_code)
+    return success_response(serializer.data, message="QR Code fetched successfully.")
+

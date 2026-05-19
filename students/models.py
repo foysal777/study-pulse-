@@ -131,6 +131,9 @@ class RecommendedCourse(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        verbose_name = "Promotional Banner"
+        verbose_name_plural = "Promotional Banners"
+
 
     def __str__(self):
         return self.course_name
