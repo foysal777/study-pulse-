@@ -1,0 +1,186 @@
+{% extends "unfold/layouts/base_site.html" %}
+{% load static %}
+
+{% block title %}Dashboard - Study Pulse Admin{% endblock %}
+
+{% block extrastyle %}
+    <style>
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            padding: 30px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .dashboard-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 200px;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Card specific colors */
+        .card-users { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-students { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .card-teachers { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .card-questions { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .card-qr { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .card-sessions { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
+        .card-banners { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+
+        .dashboard-card h2 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            font-weight: 600;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .dashboard-card .count {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 10px 0;
+            line-height: 1;
+        }
+
+        .dashboard-card .label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: auto;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .dashboard-card:hover .label {
+            opacity: 1;
+        }
+
+        .dashboard-header {
+            padding: 30px 20px 0;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .dashboard-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            color: #1f2937;
+        }
+
+        .dashboard-header p {
+            color: #6b7280;
+            font-size: 16px;
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
+                padding: 20px 10px;
+            }
+
+            .dashboard-card {
+                padding: 16px;
+                min-height: 160px;
+            }
+
+            .dashboard-card h2 {
+                font-size: 14px;
+            }
+
+            .dashboard-card .count {
+                font-size: 36px;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>📊 Dashboard</h1>
+    <p>Welcome to Study Pulse Admin Management Panel</p>
+</div>
+
+<div class="dashboard-container">
+    <!-- Users Card -->
+    <a href="/admin/accounts/user/" class="dashboard-card card-users">
+        <div>
+            <h2>👥 Users</h2>
+            <div class="count">{{ users_count }}</div>
+        </div>
+        <div class="label">View all users</div>
+    </a>
+
+    <!-- Student Profiles Card -->
+    <a href="/admin/students/studentprofile/" class="dashboard-card card-students">
+        <div>
+            <h2>🎓 Student Profiles</h2>
+            <div class="count">{{ student_profiles_count }}</div>
+        </div>
+        <div class="label">View all students</div>
+    </a>
+
+    <!-- Teacher Profiles Card -->
+    <a href="/admin/teachers/teacherprofile/" class="dashboard-card card-teachers">
+        <div>
+            <h2>👨‍🏫 Teacher Profiles</h2>
+            <div class="count">{{ teacher_profiles_count }}</div>
+        </div>
+        <div class="label">View all teachers</div>
+    </a>
+
+    <!-- Assessment Questions Card -->
+    <a href="/admin/students/assessmentquestion/" class="dashboard-card card-questions">
+        <div>
+            <h2>❓ Assessment Questions</h2>
+            <div class="count">{{ assessment_questions_count }}</div>
+        </div>
+        <div class="label">View all questions</div>
+    </a>
+
+    <!-- Play Store QR Code Card -->
+    <a href="/admin/support/playstore_qrcode/" class="dashboard-card card-qr">
+        <div>
+            <h2>📱 Play Store QR Code</h2>
+            <div class="count">{{ play_store_qr_count }}</div>
+        </div>
+        <div class="label">View QR codes</div>
+    </a>
+
+    <!-- Session List Card -->
+    <a href="/admin/teachers/sessionlist/" class="dashboard-card card-sessions">
+        <div>
+            <h2>🕐 Session List</h2>
+            <div class="count">{{ session_lists_count }}</div>
+        </div>
+        <div class="label">View all sessions</div>
+    </a>
+
+    <!-- Promotional Banner Card -->
+    <a href="/admin/students/recommendedcourse/" class="dashboard-card card-banners">
+        <div>
+            <h2>🎨 Promotional Banners</h2>
+            <div class="count">{{ promotional_banners_count }}</div>
+        </div>
+        <div class="label">View all banners</div>
+    </a>
+</div>
+
+{% endblock %}

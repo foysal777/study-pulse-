@@ -1,0 +1,18 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls admin_list %}
+
+{% block object-tools-items %}
+    <div class="flex flex-row items-center gap-2">
+        <a href="{% url cl.opts|admin_urlname:'download_all' %}" class="addlink bg-green-600 flex gap-2 items-center h-[38px] justify-center -my-1 px-4 rounded-full text-white" title="{% trans 'Download all teacher profiles as Excel' %}">
+            <span class="material-symbols-outlined text-white">download</span>
+            <span>{% trans "Download Excel" %}</span>
+        </a>
+        {% if has_add_permission %}
+            {% url cl.opts|admin_urlname:"add" as add_url %}
+            <a href="{% add_preserved_filters add_url is_popup to_field %}" class="addlink bg-primary-600 flex gap-2 items-center h-[38px] justify-center -my-1 px-4 rounded-full text-white" title="{% trans 'Add Teacher Profile' %}">
+                <span class="material-symbols-outlined text-white">add</span>
+                <span>{% trans "Add Teacher Profile" %}</span>
+            </a>
+        {% endif %}
+    </div>
+{% endblock %}

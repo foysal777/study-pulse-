@@ -1,7 +1,10 @@
 from django import forms
 from django.contrib import admin
-from django.urls import reverse
+from django.http import HttpResponse
+from django.urls import path, reverse
 from django.utils.html import format_html
+from django.utils import timezone
+from html import escape
 from unfold.admin import ModelAdmin
 
 from students.models import (
@@ -314,6 +317,7 @@ class RecommendedCourseAdmin(PlaceholderAdminMixin, ModelAdmin):
 
 @admin.register(StudentProfile)
 class StudentProfileAdmin(PlaceholderAdminMixin, ModelAdmin):
+    change_list_template = "admin/students/studentprofile/change_list.html"
     list_display = (
         "id",
         "student",
@@ -328,6 +332,7 @@ class StudentProfileAdmin(PlaceholderAdminMixin, ModelAdmin):
     )
     search_fields = ("student__full_name", "student__email", "phone_number", "parents_phone_number")
     list_filter = ("gender", "updated_at")
+    list_select_related = ("student",)
     autocomplete_fields = ("student",)
     readonly_fields = ("profile_picture_preview", "created_at", "updated_at")
     fieldsets = (
@@ -377,6 +382,94 @@ class StudentProfileAdmin(PlaceholderAdminMixin, ModelAdmin):
             },
         ),
     )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "export-excel/",
+                self.admin_site.admin_view(self.export_excel_view),
+                name="students_studentprofile_export_excel",
+            ),
+        ]
+        return custom_urls + urls
+
+    def export_excel_view(self, request):
+        headers = [
+            "Profile ID",
+            "Student ID",
+            "Student Name",
+            "Account Full Name",
+            "Email",
+            "Phone Number",
+            "Age",
+            "Gender",
+            "Last Achieved Degree",
+            "Parents Name",
+            "Parents Phone Number",
+            "Preferred Study Time",
+            "Preferred Study Mode",
+            "Preferred Study Language",
+            "Profile Picture URL",
+            "Created At",
+            "Updated At",
+        ]
+
+        queryset = self.get_queryset(request).order_by("-updated_at")
+        rows = []
+        for profile in queryset:
+            values = [
+                profile.id,
+                profile.student_id,
+                profile.student_name or "",
+                profile.student.full_name if profile.student_id else "",
+                profile.student.email if profile.student_id else "",
+                profile.phone_number or "",
+                profile.age if profile.age is not None else "",
+                profile.gender or "",
+                profile.last_achieved_degree or "",
+                profile.parents_name or "",
+                profile.parents_phone_number or "",
+                self._format_export_value(profile.preferred_study_time),
+                self._format_export_value(profile.preferred_study_mode),
+                self._format_export_value(profile.preferred_study_language),
+                request.build_absolute_uri(profile.profile_picture.url) if profile.profile_picture else "",
+                self._format_datetime(profile.created_at),
+                self._format_datetime(profile.updated_at),
+            ]
+            rows.append(
+                "<tr>{}</tr>".format(
+                    "".join(f"<td>{escape(str(value))}</td>" for value in values)
+                )
+            )
+        header_html = "".join(f"<th>{escape(header)}</th>" for header in headers)
+        table_html = (
+            "<html><head><meta charset='utf-8'></head><body>"
+            "<table border='1'>"
+            f"<thead><tr>{header_html}</tr></thead>"
+            f"<tbody>{''.join(rows)}</tbody>"
+            "</table>"
+            "</body></html>"
+        )
+
+        response = HttpResponse(
+            table_html,
+            content_type="application/vnd.ms-excel; charset=utf-8",
+        )
+        response["Content-Disposition"] = 'attachment; filename="student_profiles.xls"'
+        return response
+
+    def _format_export_value(self, value):
+        if not value:
+            return ""
+        if isinstance(value, (list, tuple)):
+            return ", ".join(str(item) for item in value)
+        return str(value)
+
+    def _format_datetime(self, value):
+        if not value:
+            return ""
+        return timezone.localtime(value).strftime("%Y-%m-%d %I:%M %p")
 
     def profile_picture_preview(self, obj):
         if obj.profile_picture:

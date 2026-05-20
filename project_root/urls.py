@@ -8,6 +8,7 @@ from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
 )
+from common.dashboard_views import dashboard_view
 
 # Force correct MIME types for audio files so browsers play instead of download
 mimetypes.add_type("audio/mpeg", ".mpeg")
@@ -19,6 +20,7 @@ mimetypes.add_type("audio/wav", ".wav")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('admin/dashboard/', dashboard_view, name='admin_dashboard'),
     path("api/accounts/", include("accounts.urls")),
     path("api/students/", include("students.urls")),
     path("api/teachers/", include("teachers.urls")),

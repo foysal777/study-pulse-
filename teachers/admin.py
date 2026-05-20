@@ -14,6 +14,7 @@ from teachers.models import (
     TeacherProfile, TeachersLocation, TeacherAvailability,
     TeacherSlot, StudentBooking
 )
+from teachers.export_utils import export_teacher_profiles_to_excel
 
 
 
@@ -69,6 +70,7 @@ class PlaceholderAdminMixin:
 
 @admin.register(TeacherProfile)
 class TeacherProfileAdmin(PlaceholderAdminMixin, ModelAdmin):
+    change_list_template = "admin/teachers/teacherprofile/change_list.html"
     list_display = ("id", "name", "phone_number", "age", "gender", "created_at")
     search_fields = ("name", "phone_number")
     list_filter = ("gender",)
@@ -78,6 +80,28 @@ class TeacherProfileAdmin(PlaceholderAdminMixin, ModelAdmin):
         "teaching_medium", "courses_classes_taught", 
         "other_courses_classes", "offline_location", "teachers_room"
     )
+    actions = ["export_to_excel"]
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "download-all/",
+                self.admin_site.admin_view(self.download_all_profiles),
+                name="teachers_teacherprofile_download_all",
+            ),
+        ]
+        return custom_urls + urls
+
+    def download_all_profiles(self, request):
+        """Download all teacher profiles as Excel"""
+        queryset = self.get_queryset(request)
+        return export_teacher_profiles_to_excel(queryset)
+
+    @action(description="📥 Download selected teacher profiles as Excel", variant=ActionVariant.SUCCESS)
+    def export_to_excel(self, request, queryset):
+        """Export selected teacher profiles to Excel file"""
+        return export_teacher_profiles_to_excel(queryset)
 
 
 # @admin.register(TeacherLevel)
