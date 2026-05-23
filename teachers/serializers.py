@@ -64,6 +64,15 @@ class TeacherAvailabilitySerializer(serializers.ModelSerializer):
         fields = ["id", "teacher", "day_of_week", "start_time", "end_time", "mode"]
         read_only_fields = ["id", "teacher"]
 
+    def validate(self, attrs):
+        start = attrs.get("start_time")
+        end = attrs.get("end_time")
+        if start and end and start >= end:
+            raise serializers.ValidationError(
+                {"end_time": "End time must be strictly after start time."}
+            )
+        return attrs
+
 
 class AvailableSlotSerializer(serializers.Serializer):
     date = serializers.DateField()
@@ -169,7 +178,7 @@ class PendingRequestSerializer(serializers.ModelSerializer):
         model = PendingRequest
         fields = [
             "id", "teacher_name", "request_type", "request_type_display",
-            "details", "status", "status_display", "created_at"
+            "details", "cancellation_reason", "status", "status_display", "created_at"
         ]
 
 
@@ -178,6 +187,7 @@ class CancellationRequestSubmitSerializer(serializers.Serializer):
     details = serializers.CharField(max_length=255, required=False)
     slot_id = serializers.IntegerField(required=False, help_text="ID of the specific slot to cancel")
     availability_id = serializers.IntegerField(required=False, help_text="ID of the weekly availability to withdraw")
+    cancellation_reason = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
 
 class SessionNoticeSerializer(serializers.Serializer):

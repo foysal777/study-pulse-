@@ -132,6 +132,82 @@ class AssessmentQuestionDisplaySerializer(serializers.ModelSerializer):
         fields = ["id", "question_type", "prompt", "audio_file", "max_listens", "transcript", "marks", "options"]
 
 
+class RandomQuizQuestionSerializer(AssessmentQuestionDisplaySerializer):
+    level_name = serializers.SerializerMethodField()
+    level_id = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.CharField())
+    def get_level_name(self, obj) -> str:
+        return obj.section.template.name
+
+    @extend_schema_field(serializers.IntegerField())
+    def get_level_id(self, obj) -> int:
+        return obj.section.template.id
+
+    class Meta(AssessmentQuestionDisplaySerializer.Meta):
+        fields = AssessmentQuestionDisplaySerializer.Meta.fields + ["level_name", "level_id"]
+
+
+class RandomQuizSuccessResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(default=True)
+    message = serializers.CharField()
+    data = RandomQuizQuestionSerializer(many=True)
+
+
+class RandomQuizLevelBreakdownSerializer(serializers.Serializer):
+    level_name = serializers.CharField()
+    total = serializers.IntegerField()
+    correct = serializers.IntegerField()
+    score = serializers.DecimalField(max_digits=6, decimal_places=2)
+    max_score = serializers.DecimalField(max_digits=6, decimal_places=2)
+    percentage = serializers.DecimalField(max_digits=5, decimal_places=2)
+
+
+class RandomQuizDetailedResultSerializer(serializers.Serializer):
+    question_id = serializers.IntegerField()
+    prompt = serializers.CharField()
+    level_name = serializers.CharField()
+    submitted_option_id = serializers.IntegerField(allow_null=True)
+    is_correct = serializers.BooleanField()
+    correct_option_id = serializers.IntegerField(allow_null=True)
+    correct_option_text = serializers.CharField(allow_blank=True, allow_null=True)
+
+
+class RandomQuizResultDataSerializer(serializers.Serializer):
+    total_questions = serializers.IntegerField()
+    total_correct = serializers.IntegerField()
+    overall_score = serializers.DecimalField(max_digits=8, decimal_places=2)
+    max_score = serializers.DecimalField(max_digits=8, decimal_places=2)
+    overall_percentage = serializers.DecimalField(max_digits=5, decimal_places=2)
+    suggested_level = serializers.CharField()
+    level_breakdown = RandomQuizLevelBreakdownSerializer(many=True)
+    detailed_results = RandomQuizDetailedResultSerializer(many=True)
+
+
+class RandomQuizSubmitResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(default=True)
+    message = serializers.CharField()
+    data = RandomQuizResultDataSerializer()
+
+
+class RandomQuizScoreDetailSerializer(serializers.Serializer):
+    attempt_id = serializers.IntegerField()
+    student_id = serializers.IntegerField()
+    student_name = serializers.CharField()
+    student_email = serializers.CharField()
+    overall_score = serializers.DecimalField(max_digits=8, decimal_places=2)
+    max_score = serializers.DecimalField(max_digits=8, decimal_places=2)
+    overall_percentage = serializers.DecimalField(max_digits=5, decimal_places=2)
+    suggested_level = serializers.CharField()
+    evaluated_at = serializers.DateTimeField()
+
+
+class RandomQuizScoresListResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(default=True)
+    message = serializers.CharField()
+    data = RandomQuizScoreDetailSerializer(many=True)
+
+
 class AssessmentSectionDisplaySerializer(serializers.ModelSerializer):
     questions = AssessmentQuestionDisplaySerializer(many=True, read_only=True)
     

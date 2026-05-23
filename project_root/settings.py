@@ -66,6 +66,7 @@ UNFOLD = {
     "SITE_HEADER": "Study Pulse",
     "SITE_SUBHEADER": "Management Dashboard",
     "SITE_SYMBOL": "dashboard",
+    "DASHBOARD_CALLBACK": "common.dashboard_views.dashboard_callback",
     "SIDEBAR": {
         "show_search": True,
         "show_all_applications": True,
@@ -362,7 +363,7 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Dhaka'
 
 USE_I18N = True
 

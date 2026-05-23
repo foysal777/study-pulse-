@@ -109,6 +109,7 @@ class PendingRequest(models.Model):
     request_type = models.CharField(max_length=50, choices=RequestType.choices, default=RequestType.SESSION_CANCELLATION)
     details = models.CharField(max_length=255, default="", help_text="e.g. Monday 09:00 AM")
     status = models.CharField(max_length=20, choices=RequestStatus.choices, default=RequestStatus.PENDING)
+    cancellation_reason = models.TextField(blank=True, null=True, verbose_name="Cancellation Reason")
     slot = models.ForeignKey("TeacherSlot", on_delete=models.SET_NULL, null=True, blank=True, related_name="cancellation_requests")
     availability = models.ForeignKey("TeacherAvailability", on_delete=models.SET_NULL, null=True, blank=True, related_name="withdrawal_requests")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -249,6 +250,16 @@ class TeacherAvailability(models.Model):
     def __str__(self):
         return f"{self.teacher.name} - {self.day_of_week} ({self.start_time}-{self.end_time})"
 
+    def clean(self):
+        super().clean()
+        if self.start_time and self.end_time and self.start_time >= self.end_time:
+            raise ValidationError({"end_time": "End time must be strictly after start time."})
+
+    def save(self, *args, **kwargs):
+        if self.start_time and self.end_time and self.start_time >= self.end_time:
+            raise ValidationError("End time must be strictly after start time.")
+        super().save(*args, **kwargs)
+
 
 class TeacherSlot(models.Model):
     teacher = models.ForeignKey(
@@ -288,6 +299,16 @@ class TeacherSlot(models.Model):
 
     def __str__(self):
         return f"{self.teacher.name} - {self.date} {self.start_time} ({self.booked_students}/{self.max_students})"
+
+    def clean(self):
+        super().clean()
+        if self.start_time and self.end_time and self.start_time >= self.end_time:
+            raise ValidationError({"end_time": "End time must be strictly after start time."})
+
+    def save(self, *args, **kwargs):
+        if self.start_time and self.end_time and self.start_time >= self.end_time:
+            raise ValidationError("End time must be strictly after start time.")
+        super().save(*args, **kwargs)
 
 
 class StudentBooking(models.Model):

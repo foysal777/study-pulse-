@@ -555,18 +555,19 @@ class PendingRequestAdmin(PlaceholderAdminMixin, ModelAdmin):
         "teacher",
         "request_type",
         "details",
+        "cancellation_reason",
         "status_display",
         "actions_menu",
         "created_at",
     )
     list_filter = ("status", "request_type", "teacher")
-    search_fields = ("teacher__name", "details")
+    search_fields = ("teacher__name", "details", "cancellation_reason")
     autocomplete_fields = ("teacher",)
     fieldsets = (
         (
             None,
             {
-                "fields": ("teacher", "request_type", "details", "status"),
+                "fields": ("teacher", "request_type", "details", "cancellation_reason", "status"),
             },
         ),
     )

@@ -216,7 +216,11 @@ def teacher_availability(request):
         return error_response("Teacher profile not found.", status_code=status.HTTP_404_NOT_FOUND)
 
     if request.method == "GET":
-        availabilities = TeacherAvailability.objects.filter(teacher=profile)
+        availabilities = TeacherAvailability.objects.filter(
+            teacher=profile
+        ).exclude(
+            withdrawal_requests__status__in=[RequestStatus.PENDING, RequestStatus.APPROVED]
+        ).distinct()
         serializer = TeacherAvailabilitySerializer(availabilities, many=True)
         return success_response(serializer.data, message="Availability fetched successfully.")
 
@@ -254,7 +258,11 @@ def student_available_slots(request):
 
     day_name = target_date.strftime("%A")  # Monday, Tuesday, etc.
 
-    availabilities = TeacherAvailability.objects.filter(day_of_week=day_name).select_related("teacher")
+    availabilities = TeacherAvailability.objects.filter(
+        day_of_week=day_name
+    ).exclude(
+        withdrawal_requests__status__in=[RequestStatus.PENDING, RequestStatus.APPROVED]
+    ).select_related("teacher").distinct()
     if mode:
         availabilities = availabilities.filter(mode=mode)
 
@@ -320,6 +328,19 @@ def student_book_slot(request):
     offline_location = serializer.validated_data.get("offline_location")
     day_name = date.strftime("%A")
 
+    # Check if the student already has a booking on this date and start_time
+    duplicate_booking = StudentBooking.objects.filter(
+        student=request.user,
+        slot__date=date,
+        slot__start_time=start_time
+    ).exists()
+    
+    if duplicate_booking:
+        return error_response(
+            "You have already booked a session at this date and time.",
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+
     try:
         with transaction.atomic():
             # 1. Find all teachers available at this time/mode/location
@@ -331,7 +352,11 @@ def student_book_slot(request):
             if mode == SlotMode.OFFLINE and offline_location:
                 avail_filters["teacher__offline_location"] = offline_location
 
-            available_teachers = TeacherAvailability.objects.filter(**avail_filters).values_list("teacher_id", flat=True)
+            available_teachers = TeacherAvailability.objects.filter(
+                **avail_filters
+            ).exclude(
+                withdrawal_requests__status__in=[RequestStatus.PENDING, RequestStatus.APPROVED]
+            ).values_list("teacher_id", flat=True).distinct()
 
             if not available_teachers:
                 return error_response("No teachers available for this slot.", status_code=status.HTTP_404_NOT_FOUND)
@@ -394,6 +419,12 @@ def student_book_slot(request):
             return success_response(res_serializer.data, message="Slot booked successfully.", status_code=status.HTTP_201_CREATED)
 
     except Exception as e:
+        from django.db import IntegrityError
+        if isinstance(e, IntegrityError) or "unique" in str(e).lower():
+            return error_response(
+                "You have already booked a session at this date and time.",
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
         return error_response(f"Booking failed: {str(e)}", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -448,6 +479,8 @@ def teacher_booked_sessions(request):
         teacher=profile,
         bookings__marks__isnull=True,
         bookings__feedback__isnull=True
+    ).exclude(
+        cancellation_requests__status=RequestStatus.PENDING
     ).distinct().order_by("-date", "-start_time")
     
     serializer = TeacherBookedSlotSerializer(slots, many=True)
@@ -478,6 +511,8 @@ def teacher_pending_students(request):
         slot__teacher__user=request.user,
         marks__isnull=True, 
         feedback__isnull=True
+    ).exclude(
+        slot__cancellation_requests__status=RequestStatus.PENDING
     ).select_related("student", "slot")
 
     # Apply filters
@@ -638,6 +673,7 @@ def teacher_request_cancellation(request):
             teacher=profile,
             request_type=request_type,
             details=details,
+            cancellation_reason=serializer.validated_data.get("cancellation_reason", ""),
             slot=slot_obj,
             availability=avail_obj,
             status=RequestStatus.PENDING
@@ -795,12 +831,21 @@ def teacher_dashboard(request):
 
     # 4. Curriculum list (Sessions with curriculum)
     # Showing slots that have a curriculum uploaded
-    curriculum_slots = TeacherSlot.objects.filter(teacher=profile, teachers_curriculum__isnull=False).exclude(teachers_curriculum="").order_by("-date")
+    curriculum_slots = TeacherSlot.objects.filter(
+        teacher=profile, 
+        teachers_curriculum__isnull=False
+    ).exclude(
+        teachers_curriculum=""
+    ).exclude(
+        cancellation_requests__status=RequestStatus.PENDING
+    ).order_by("-date")
 
     # 5. Upcoming sessions
     upcoming_sessions = TeacherSlot.objects.filter(
         teacher=profile, 
         date__gte=today
+    ).exclude(
+        cancellation_requests__status=RequestStatus.PENDING
     ).order_by("date", "start_time")[:5]
 
     payload = {

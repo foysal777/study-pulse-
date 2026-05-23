@@ -40,6 +40,10 @@ from students.serializers import (
     GeneralInfoSuccessResponseSerializer,
     StudentNotificationSerializer,
     StudentNotificationSuccessResponseSerializer,
+    RandomQuizSuccessResponseSerializer,
+    RandomQuizQuestionSerializer,
+    RandomQuizSubmitResponseSerializer,
+    RandomQuizScoresListResponseSerializer,
 )
 from teachers.models import StudentBooking, GeneralInfo
 from students.models import StudentNotification
@@ -533,13 +537,7 @@ def student_dashboard(request):
             "feedback": b.feedback if b.feedback else "Good progress!",
         })
 
-    # Fallback to dummy data if no real progress exists
-    if not my_progress:
-        my_progress = [
-            {"id": 1, "test_name": "Progress test 1", "percentage": "85%", "feedback": "Excellent work!"},
-            {"id": 2, "test_name": "Progress test 2", "percentage": "92%", "feedback": "Keep it up!"},
-            {"id": 3, "test_name": "Progress test 3", "percentage": "78%", "feedback": "Needs improvement in grammar."},
-        ]
+
 
     payload = {
         "student_name": student_name,
@@ -921,3 +919,343 @@ def assessment_result(request, attempt_id):
     }
 
     return success_response(result, message="Assessment result fetched successfully.")
+
+
+@extend_schema(
+    tags=["Students Assessment"],
+    operation_id="students_random_quiz",
+    responses={200: RandomQuizSuccessResponseSerializer},
+    description="Generate a random quiz consisting of 20 questions distributed across the active assessment levels.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def random_quiz(request):
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Only student users can access this endpoint.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    import random
+    templates = list(AssessmentTemplate.objects.filter(is_active=True))
+    questions = []
+
+    if templates:
+        target_per_template = max(1, 20 // len(templates))
+        extra_needed = 20 - (target_per_template * len(templates))
+
+        for i, t in enumerate(templates):
+            count_needed = target_per_template + (1 if i < extra_needed else 0)
+            t_questions = list(
+                AssessmentQuestion.objects.filter(section__template=t, is_active=True)
+                .prefetch_related("options")
+            )
+            if len(t_questions) >= count_needed:
+                selected = random.sample(t_questions, count_needed)
+            else:
+                selected = t_questions
+            questions.extend(selected)
+
+        # Fallback to fill up to 20 questions if some templates had too few questions
+        if len(questions) < 20:
+            selected_ids = [q.id for q in questions]
+            all_active_qs = list(
+                AssessmentQuestion.objects.filter(section__template__is_active=True, is_active=True)
+                .exclude(id__in=selected_ids)
+                .prefetch_related("options")
+            )
+            needed = 20 - len(questions)
+            if all_active_qs:
+                extra_selected = random.sample(all_active_qs, min(len(all_active_qs), needed))
+                questions.extend(extra_selected)
+    else:
+        # Ultimate fallback: fetch any active questions if templates are not configured
+        all_qs = list(
+            AssessmentQuestion.objects.filter(is_active=True)
+            .prefetch_related("options")
+        )
+        questions = random.sample(all_qs, min(len(all_qs), 20))
+
+    # Shuffle the final set of questions to mix the levels
+    random.shuffle(questions)
+
+    serializer = RandomQuizQuestionSerializer(questions, many=True, context={"request": request})
+    return success_response(serializer.data, message="Random quiz questions fetched successfully.")
+
+
+@extend_schema(
+    tags=["Students Assessment"],
+    operation_id="students_random_quiz_submit",
+    request=ExamSubmitRequestSerializer,
+    responses={200: RandomQuizSubmitResponseSerializer},
+    description="Submit and instantly evaluate answers for the random quiz.",
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def random_quiz_submit(request):
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Only student users can access this endpoint.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    serializer = ExamSubmitRequestSerializer(data=request.data)
+    if not serializer.is_valid():
+        return error_response("Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    submitted_answers = serializer.validated_data["answers"]
+    submitted_q_ids = [ans["question_id"] for ans in submitted_answers]
+
+    # Pre-fetch questions and options to minimize DB queries
+    questions_qs = AssessmentQuestion.objects.filter(
+        id__in=submitted_q_ids, is_active=True
+    ).select_related("section__template").prefetch_related("options")
+
+    questions_map = {q.id: q for q in questions_qs}
+
+    total_questions = len(submitted_answers)
+    total_correct = 0
+    overall_score = Decimal("0")
+    max_score = Decimal("0")
+
+    # Group by levels/templates
+    level_breakdown_dict = {}
+    detailed_results = []
+
+    for ans in submitted_answers:
+        q_id = ans["question_id"]
+        question = questions_map.get(q_id)
+
+        if not question:
+            continue
+
+        template = question.section.template
+        t_id = template.id
+        level_name = template.name
+
+        if t_id not in level_breakdown_dict:
+            level_breakdown_dict[t_id] = {
+                "level_name": level_name,
+                "total": 0,
+                "correct": 0,
+                "score": Decimal("0"),
+                "max_score": Decimal("0"),
+            }
+
+        level_data = level_breakdown_dict[t_id]
+        level_data["total"] += 1
+        level_data["max_score"] += question.marks
+        max_score += question.marks
+
+        selected_option = None
+        is_correct = False
+        correct_option = None
+
+        # Find the correct option for this question
+        for opt in question.options.all():
+            if opt.is_correct:
+                correct_option = opt
+                break
+
+        opt_id = ans.get("selected_option_id")
+        if opt_id:
+            for opt in question.options.all():
+                if opt.id == opt_id:
+                    selected_option = opt
+                    break
+
+        if selected_option and selected_option.is_correct:
+            is_correct = True
+            total_correct += 1
+            overall_score += question.marks
+            level_data["correct"] += 1
+            level_data["score"] += question.marks
+
+        detailed_results.append({
+            "question_id": question.id,
+            "prompt": question.prompt,
+            "level_name": level_name,
+            "submitted_option_id": opt_id,
+            "is_correct": is_correct,
+            "correct_option_id": correct_option.id if correct_option else None,
+            "correct_option_text": correct_option.text if correct_option else "",
+        })
+
+    # Convert level breakdowns to list and calculate percentages
+    level_breakdown = []
+    for t_id, item in level_breakdown_dict.items():
+        max_s = item["max_score"]
+        pct = (
+            (item["score"] * Decimal("100") / max_s).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            if max_s > 0 else Decimal("0")
+        )
+        level_breakdown.append({
+            "level_name": item["level_name"],
+            "total": item["total"],
+            "correct": item["correct"],
+            "score": item["score"],
+            "max_score": max_s,
+            "percentage": pct,
+        })
+
+    overall_percentage = (
+        (overall_score * Decimal("100") / max_score).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        if max_score > 0 else Decimal("0")
+    )
+
+    # Smart Suggested Level logic
+    templates_sorted = sorted(list(AssessmentTemplate.objects.filter(is_active=True)), key=lambda x: x.id)
+    suggested_level = "Elementary (A1)"
+
+    achieved_pct = {}
+    for item in level_breakdown_dict.keys():
+        lbl_data = level_breakdown_dict[item]
+        max_s = lbl_data["max_score"]
+        achieved_pct[item] = (lbl_data["score"] / max_s) if max_s > 0 else 0
+
+    for t in templates_sorted:
+        pct = achieved_pct.get(t.id, 0)
+        if pct < 0.60:
+            suggested_level = t.name
+            break
+    else:
+        if templates_sorted:
+            suggested_level = templates_sorted[-1].name
+
+    # Dynamic sequence score mapping
+    score_fields = ["reading_score", "listening_score", "writing_score", "grammar_score"]
+    scores_mapping = {field: Decimal("0") for field in score_fields}
+    for i, t in enumerate(templates_sorted):
+        if i < len(score_fields):
+            scores_mapping[score_fields[i]] = level_breakdown_dict.get(t.id, {}).get("score", Decimal("0"))
+
+    with transaction.atomic():
+        random_template, _ = AssessmentTemplate.objects.get_or_create(
+            name="Random Quiz",
+            defaults={
+                "description": "Template for random placement quizzes.",
+                "pass_percentage": 60.0,
+                "is_active": False,
+            }
+        )
+
+        attempt = StudentAssessmentAttempt.objects.create(
+            student=request.user,
+            template=random_template,
+            status=AssessmentAttemptStatus.EVALUATED,
+            total_score=overall_score,
+            is_passed=overall_percentage >= 60,
+            reading_score=scores_mapping["reading_score"],
+            listening_score=scores_mapping["listening_score"],
+            writing_score=scores_mapping["writing_score"],
+            grammar_score=scores_mapping["grammar_score"],
+            evaluated_at=timezone.now(),
+            submitted_at=timezone.now(),
+        )
+
+        answer_objects = []
+        for ans in submitted_answers:
+            q_id = ans["question_id"]
+            question = questions_map.get(q_id)
+            if not question:
+                continue
+
+            selected_option = None
+            opt_id = ans.get("selected_option_id")
+            if opt_id:
+                for opt in question.options.all():
+                    if opt.id == opt_id:
+                        selected_option = opt
+                        break
+
+            is_correct = selected_option.is_correct if selected_option else False
+
+            answer_objects.append(StudentAssessmentAnswer(
+                attempt=attempt,
+                question=question,
+                selected_option=selected_option,
+                text_answer=ans.get("text_answer", ""),
+                is_correct=is_correct,
+                auto_score=question.marks if is_correct else Decimal("0"),
+            ))
+
+        StudentAssessmentAnswer.objects.bulk_create(answer_objects, ignore_conflicts=True)
+
+    result_payload = {
+        "total_questions": total_questions,
+        "total_correct": total_correct,
+        "overall_score": overall_score,
+        "max_score": max_score,
+        "overall_percentage": overall_percentage,
+        "suggested_level": suggested_level,
+        "level_breakdown": level_breakdown,
+        "detailed_results": detailed_results,
+    }
+
+    return success_response(result_payload, message="Quiz evaluated successfully.")
+
+
+@extend_schema(
+    tags=["Students Assessment"],
+    operation_id="students_quiz_scores",
+    responses={200: RandomQuizScoresListResponseSerializer},
+    description="Retrieve a list of quiz attempts and marks. Students get their own scores; Teachers/Admins get scores for all students.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def student_quiz_scores(request):
+    if request.user.role in [UserRole.TEACHER, UserRole.ADMIN]:
+        # Teacher/Admin wants to see all student scores for "Random Quiz"
+        attempts = StudentAssessmentAttempt.objects.filter(
+            template__name="Random Quiz",
+            status=AssessmentAttemptStatus.EVALUATED
+        ).select_related("student", "template").order_by("-evaluated_at")
+    else:
+        # Student wants to see their own scores for "Random Quiz"
+        attempts = StudentAssessmentAttempt.objects.filter(
+            student=request.user,
+            template__name="Random Quiz",
+            status=AssessmentAttemptStatus.EVALUATED
+        ).select_related("student", "template").order_by("-evaluated_at")
+
+    templates_sorted = sorted(list(AssessmentTemplate.objects.filter(is_active=True)), key=lambda x: x.id)
+
+    scores_list = []
+    for attempt in attempts:
+        achieved_pct = {
+            "reading_score": attempt.reading_score or Decimal("0"),
+            "listening_score": attempt.listening_score or Decimal("0"),
+            "writing_score": attempt.writing_score or Decimal("0"),
+            "grammar_score": attempt.grammar_score or Decimal("0"),
+        }
+
+        score_fields = ["reading_score", "listening_score", "writing_score", "grammar_score"]
+        suggested_level = "Elementary (A1)"
+
+        for i, t in enumerate(templates_sorted):
+            if i < len(score_fields):
+                drawn_count = attempt.answers.filter(question__section__template=t).count() or 5
+                earned = achieved_pct[score_fields[i]]
+                pct = earned / Decimal(drawn_count) if drawn_count > 0 else 0
+                if pct < 0.60:
+                    suggested_level = t.name
+                    break
+        else:
+            if templates_sorted:
+                suggested_level = templates_sorted[-1].name
+
+        scores_list.append({
+            "attempt_id": attempt.id,
+            "student_id": attempt.student.id,
+            "student_name": attempt.student.full_name,
+            "student_email": attempt.student.email,
+            "overall_score": attempt.total_score,
+            "max_score": Decimal("20.00"),
+            "overall_percentage": (attempt.total_score * Decimal("100") / Decimal("20")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            "suggested_level": suggested_level,
+            "evaluated_at": attempt.evaluated_at,
+        })
+
+    return success_response(scores_list, message="Student quiz scores retrieved successfully.")
+
+

@@ -27,3 +27,18 @@ def dashboard_view(request):
     }
     
     return render(request, 'admin/custom_dashboard.html', context)
+
+
+def dashboard_callback(request, context):
+    """Callback for django-unfold dashboard to populate context with card stats"""
+    context.update({
+        'users_count': User.objects.count(),
+        'student_profiles_count': StudentProfile.objects.count(),
+        'teacher_profiles_count': TeacherProfile.objects.count(),
+        'assessment_questions_count': AssessmentQuestion.objects.count(),
+        'play_store_qr_count': PlayStoreQRCode.objects.count(),
+        'session_lists_count': SessionList.objects.count(),
+        'promotional_banners_count': RecommendedCourse.objects.count(),
+    })
+    return context
+
