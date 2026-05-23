@@ -633,6 +633,9 @@ def teacher_request_cancellation(request):
     except TeacherProfile.DoesNotExist:
         return error_response("Teacher profile not found.", status_code=status.HTTP_404_NOT_FOUND)
 
+    print("\n" + "="*50)
+    print("FRONTEND PAYLOAD:", request.data)
+    print("="*50 + "\n")
     serializer = CancellationRequestSubmitSerializer(data=request.data)
     if serializer.is_valid():
         request_type = serializer.validated_data["request_type"]

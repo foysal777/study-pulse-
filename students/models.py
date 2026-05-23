@@ -120,12 +120,6 @@ class RecommendedCourse(models.Model):
     banner = models.ImageField(upload_to="recommended_courses/")
     course_calender = models.FileField(upload_to="course_calender_files/", blank=True)
     course_curriculum = models.FileField(upload_to="course_curriculum_files/", blank=True)
-    teachers = models.ManyToManyField(
-        "teachers.Teacher",
-        related_name="recommended_courses",
-        blank=True,
-        verbose_name="Teachers",
-    )
    
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -134,15 +128,8 @@ class RecommendedCourse(models.Model):
         verbose_name = "Promotional Banner"
         verbose_name_plural = "Promotional Banners"
 
-
     def __str__(self):
         return self.course_name
-
-   
-
-    @property
-    def teachers_display(self):
-        return ", ".join(self.teachers.values_list("name", flat=True))
 
 
 class StudentLocation(models.Model):
@@ -396,4 +383,5 @@ class AssessmentTemplateImporter(models.Model):
         verbose_name_plural = "Assessment Importers"
 
     def __str__(self):
+        return f"Import from {self.gdoc_url}"
         return f"Import from {self.gdoc_url}"

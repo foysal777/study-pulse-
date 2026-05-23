@@ -1,0 +1,130 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<style>
+    /* Hide +, edit, view icons next to all select dropdowns */
+    .related-widget-wrapper-link,
+    a[id^="add_id_"],
+    a[id^="change_id_"],
+    a[id^="view_id_"],
+    a[id*="add_id_sessions"],
+    a[id*="change_id_sessions"],
+    a[id*="view_id_sessions"] {
+        display: none !important;
+    }
+
+    /* Hide the icon buttons inside the inline rows */
+    .inline-related .related-widget-wrapper-link {
+        display: none !important;
+    }
+
+    /* Make the session inline table look clean */
+    #sessions-group .tabular.inline-related {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 12px;
+    }
+
+    #sessions-group h2 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #374151;
+        padding: 14px 16px;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+        margin: 0;
+    }
+
+    #sessions-group .module.tabular {
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    #sessions-group table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    #sessions-group table thead th {
+        background: #f3f4f6;
+        color: #6b7280;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 10px 14px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    #sessions-group table tbody tr {
+        border-bottom: 1px solid #f3f4f6;
+        transition: background 0.15s;
+    }
+
+    #sessions-group table tbody tr:hover {
+        background: #fafafa;
+    }
+
+    #sessions-group table tbody td {
+        padding: 10px 12px;
+        vertical-align: middle;
+    }
+
+    #sessions-group table tbody td input[type="text"],
+    #sessions-group table tbody td input[type="date"],
+    #sessions-group table tbody td select {
+        width: 100%;
+        padding: 7px 10px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 13px;
+        color: #111827;
+        background: #fff;
+        outline: none;
+        transition: border-color 0.2s;
+        box-sizing: border-box;
+    }
+
+    #sessions-group table tbody td input:focus,
+    #sessions-group table tbody td select:focus {
+        border-color: #6a3bf6;
+        box-shadow: 0 0 0 2px rgba(106,59,246,0.08);
+    }
+
+    /* Hide the delete checkbox column header */
+    #sessions-group table thead th.original,
+    #sessions-group table tbody td.original {
+        display: none;
+    }
+
+    /* Hide delete checkboxes */
+    #sessions-group .delete {
+        display: none;
+    }
+
+    /* Hide "Add another session" link */
+    #sessions-group .add-row {
+        display: none;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const dateInput = document.getElementById("id_availability_date_range");
+        if (dateInput && typeof flatpickr !== 'undefined') {
+            flatpickr(dateInput, {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                placeholder: "Select Date Range (Start to End)"
+            });
+        }
+    });
+</script>
+{% endblock %}
+

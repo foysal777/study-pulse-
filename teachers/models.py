@@ -333,3 +333,44 @@ class StudentBooking(models.Model):
 
     def __str__(self):
         return f"{self.student.full_name} - {self.slot}"
+
+
+class CourseModule(models.Model):
+    name = models.CharField(max_length=255, blank=True, default="", verbose_name="Module Name")
+    banner = models.ForeignKey("students.RecommendedCourse", on_delete=models.SET_NULL, null=True, blank=True, related_name="modules", verbose_name="Promotional Banner")
+    teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True, related_name="course_modules", verbose_name="Teacher")
+    availability_date_range = models.CharField(max_length=255, blank=True, null=True, verbose_name="Availability Date Range")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Course Module"
+        verbose_name_plural = "Course Modules"
+
+    def save(self, *args, **kwargs):
+        if not self.name:
+            if self.banner_id:
+                # name will be set after first save
+                pass
+            self.name = "Module"
+        super().save(*args, **kwargs)
+        # Auto-set name from banner after save
+        if self.banner and (self.name == "Module" or not self.name):
+            self.name = f"{self.banner.course_name} - Module"
+            CourseModule.objects.filter(pk=self.pk).update(name=self.name)
+
+    def __str__(self):
+        return self.name or "Module"
+
+
+class CourseModuleSession(models.Model):
+    course_module = models.ForeignKey(CourseModule, on_delete=models.CASCADE, related_name="sessions")
+    session_name = models.CharField(max_length=255, blank=True, null=True, verbose_name="Session Name")
+    
+    class Meta:
+        ordering = ["id"]
+        verbose_name = "Session"
+        verbose_name_plural = "Module Sessions"
+
+    def __str__(self):
+        return f"{self.session_name or 'Session'}"

@@ -142,6 +142,11 @@ UNFOLD = {
                 "title": "Teachers",
                 "items": [
                     {
+                        "title": "Teachers List",
+                        "icon": "school",
+                        "link": "/admin/teachers/teacher/",
+                    },
+                    {
                         "title": "Teacher Profiles",
                         "icon": "badge",
                         "link": "/admin/teachers/teacherprofile/",

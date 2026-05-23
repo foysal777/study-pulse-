@@ -6,7 +6,7 @@ from django.db.models import Count
 
 from accounts.models import User
 from students.models import StudentProfile, AssessmentQuestion, RecommendedCourse
-from teachers.models import TeacherProfile, SessionList
+from teachers.models import TeacherProfile, SessionList, Teacher
 from support.models import PlayStoreQRCode
 
 User = get_user_model()
@@ -24,6 +24,7 @@ def dashboard_view(request):
         'play_store_qr_count': PlayStoreQRCode.objects.count(),
         'session_lists_count': SessionList.objects.count(),
         'promotional_banners_count': RecommendedCourse.objects.count(),
+        'teachers_count': Teacher.objects.count(),
     }
     
     return render(request, 'admin/custom_dashboard.html', context)
@@ -39,6 +40,7 @@ def dashboard_callback(request, context):
         'play_store_qr_count': PlayStoreQRCode.objects.count(),
         'session_lists_count': SessionList.objects.count(),
         'promotional_banners_count': RecommendedCourse.objects.count(),
+        'teachers_count': Teacher.objects.count(),
     })
     return context
 

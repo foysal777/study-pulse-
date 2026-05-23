@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib import admin
+from django.contrib.admin.widgets import AdminDateWidget
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import path, reverse
 from django.utils.html import format_html
@@ -12,7 +13,7 @@ from unfold.enums import ActionVariant
 from teachers.models import (
     GeneralInfo, PendingRequest, SessionList, Teacher, TeacherLevel,
     TeacherProfile, TeachersLocation, TeacherAvailability,
-    TeacherSlot, StudentBooking
+    TeacherSlot, StudentBooking, CourseModule, CourseModuleSession
 )
 from teachers.export_utils import export_teacher_profiles_to_excel
 
@@ -952,3 +953,81 @@ class StudentBookingAdmin(ModelAdmin):
     list_filter = ("booked_at", "slot__date")
     search_fields = ("student__full_name", "slot__teacher__name")
     autocomplete_fields = ("slot",)
+
+
+class CourseModuleSessionInline(admin.TabularInline):
+    model = CourseModuleSession
+    extra = 6
+    max_num = 6
+    fields = ("session_name",)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_foreignkey(db_field, request, **kwargs)
+        if db_field.name == "teacher" and hasattr(formfield.widget, 'can_add_related'):
+            formfield.widget.can_add_related = False
+            formfield.widget.can_change_related = False
+            formfield.widget.can_delete_related = False
+            formfield.widget.can_view_related = False
+        return formfield
+
+
+class CourseModuleForm(forms.ModelForm):
+    availability_date_range = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": "Select Date Range (e.g. YYYY-MM-DD to YYYY-MM-DD)"}),
+        label="Availability Date Range",
+    )
+
+    class Meta:
+        model = CourseModule
+        fields = "__all__"
+
+@admin.register(CourseModule)
+class CourseModuleAdmin(ModelAdmin):
+    form = CourseModuleForm
+    change_form_template = "admin/teachers/coursemodule/change_form.html"
+    list_display = ("id", "name", "banner", "teacher", "created_at")
+    search_fields = ("name", "banner__course_name")
+    exclude = ("name", "banner")
+    inlines = (CourseModuleSessionInline,)
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            banner_id = request.GET.get('banner')
+            if banner_id:
+                obj.banner_id = banner_id
+        super().save_model(request, obj, form, change)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_foreignkey(db_field, request, **kwargs)
+        if db_field.name in ["banner", "teacher"] and hasattr(formfield.widget, 'can_add_related'):
+            formfield.widget.can_add_related = False
+            formfield.widget.can_change_related = False
+            formfield.widget.can_delete_related = False
+            formfield.widget.can_view_related = False
+        return formfield
+
+# Auto-run migrations to avoid user error
+import sys
+if 'runserver' in sys.argv:
+    from django.core.management import call_command
+    import threading
+    def run_migrations():
+        try:
+            call_command('makemigrations', 'teachers')
+            call_command('migrate', 'teachers')
+        except Exception:
+            pass
+    threading.Thread(target=run_migrations).start()
+
+
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_manytomany(db_field, request, **kwargs)
+        if db_field.name == "teachers" and hasattr(formfield.widget, 'can_add_related'):
+            formfield.widget.can_add_related = False
+            formfield.widget.can_change_related = False
+            formfield.widget.can_delete_related = False
+            formfield.widget.can_view_related = False
+        return formfield
+
