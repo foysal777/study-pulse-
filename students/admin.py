@@ -196,7 +196,9 @@ class RecommendedCourseAdmin(PlaceholderAdminMixin, ModelAdmin):
         "created_at",
         "actions_menu",
     )
-    readonly_fields = ("banner_preview",)
+    fields = ("course_name", "banner", "course_calender", "course_curriculum")
+    # We remove readonly_fields here so it doesn't appear in the form, 
+    # but the method still works for list_display
 
     def banner_preview(self, obj):
         if not obj or not obj.banner:
@@ -208,6 +210,16 @@ class RecommendedCourseAdmin(PlaceholderAdminMixin, ModelAdmin):
         )
 
     banner_preview.short_description = "Banner Preview"
+
+    def response_add(self, request, obj, post_url_continue=None):
+        from django.http import HttpResponseRedirect
+        return HttpResponseRedirect(f"/admin/teachers/coursemodule/add/?banner={obj.pk}")
+
+    def response_change(self, request, obj):
+        if "_save" in request.POST:
+            from django.http import HttpResponseRedirect
+            return HttpResponseRedirect(f"/admin/teachers/coursemodule/add/?banner={obj.pk}")
+        return super().response_change(request, obj)
 
     def actions_menu(self, obj):
         edit_url = reverse("admin:students_recommendedcourse_change", args=[obj.pk])

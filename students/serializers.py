@@ -208,6 +208,20 @@ class RandomQuizScoresListResponseSerializer(serializers.Serializer):
     data = RandomQuizScoreDetailSerializer(many=True)
 
 
+class RandomQuizStatsDataSerializer(serializers.Serializer):
+    average_score = serializers.DecimalField(max_digits=5, decimal_places=2)
+    average_score_percentage = serializers.DecimalField(max_digits=5, decimal_places=2)
+    score_difference = serializers.DecimalField(max_digits=5, decimal_places=2)
+    score_difference_percentage = serializers.DecimalField(max_digits=5, decimal_places=2)
+    change_type = serializers.CharField()
+
+
+class RandomQuizStatsSuccessResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(default=True)
+    message = serializers.CharField()
+    data = RandomQuizStatsDataSerializer()
+
+
 class AssessmentSectionDisplaySerializer(serializers.ModelSerializer):
     questions = AssessmentQuestionDisplaySerializer(many=True, read_only=True)
     
@@ -320,10 +334,13 @@ class StudentLocationSuccessResponseSerializer(serializers.Serializer):
 
 
 class RecommendedCourseDataSerializer(serializers.ModelSerializer):
+    is_enrolled = serializers.BooleanField(required=False)
+    sessions = serializers.ListField(required=False)
+
     class Meta:
         from students.models import RecommendedCourse
         model = RecommendedCourse
-        fields = ["id", "course_name", "banner"]
+        fields = ["id", "course_name", "banner", "is_enrolled", "sessions"]
 
 
 class RecommendedCourseSuccessResponseSerializer(serializers.Serializer):

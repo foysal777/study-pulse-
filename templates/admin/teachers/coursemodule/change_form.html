@@ -94,7 +94,7 @@
     #sessions-group table tbody td input:focus,
     #sessions-group table tbody td select:focus {
         border-color: #6a3bf6;
-        box-shadow: 0 0 0 2px rgba(106,59,246,0.08);
+        box-shadow: 0 0 0 2px rgba(106, 59, 246, 0.08);
     }
 
     /* Hide the delete checkbox column header */
@@ -112,19 +112,59 @@
     #sessions-group .add-row {
         display: none;
     }
+
+    /* Hide the plus icon button on the right */
+    .submit-row a[id*="add"], 
+    button[id*="add_id_"],
+    a.addlink,
+    .object-tools .addlink {
+        display: none !important;
+    }
+
+    /* Reposition submit buttons to the left side of module sessions */
+    .submit-row {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-start !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: absolute;
+        left: 0;
+        top: -50px;
+        z-index: 10;
+    }
+
+    #sessions-group {
+        margin-top: 0;
+        position: relative;
+        padding-top: 60px;
+    }
 </style>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const dateInput = document.getElementById("id_availability_date_range");
-        if (dateInput && typeof flatpickr !== 'undefined') {
-            flatpickr(dateInput, {
-                mode: "range",
-                dateFormat: "Y-m-d",
-                placeholder: "Select Date Range (Start to End)"
+    document.addEventListener("DOMContentLoaded", function () {
+        if (typeof flatpickr !== 'undefined') {
+            // Apply flatpickr to all session date ranges
+            const dateInputs = document.querySelectorAll('.session-date-range');
+            dateInputs.forEach(input => {
+                flatpickr(input, {
+                    mode: "range",
+                    dateFormat: "Y-m-d",
+                    placeholder: "Select Date Range"
+                });
             });
         }
+
+        // Auto-fill session names (1st session, 2nd session, etc.) after a short delay
+        setTimeout(() => {
+            const sessionNames = ["1st session", "2nd session", "3rd session", "4th session", "5th session", "6th session"];
+            for (let i = 0; i < 6; i++) {
+                const input = document.getElementById("id_sessions-" + i + "-session_name");
+                if (input && !input.value) {
+                    input.value = sessionNames[i];
+                }
+            }
+        }, 500);
     });
 </script>
 {% endblock %}
-

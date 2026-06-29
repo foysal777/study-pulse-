@@ -42,7 +42,9 @@ class Teacher(models.Model):
 
     @property
     def recommended_courses_display(self):
-        return ", ".join(str(course) for course in self.recommended_courses.all())
+        if hasattr(self, 'course_modules'):
+            return ", ".join(str(module.name) for module in self.course_modules.all())
+        return ""
 
     def save(self, *args, **kwargs):
         if self.pk:
@@ -339,7 +341,6 @@ class CourseModule(models.Model):
     name = models.CharField(max_length=255, blank=True, default="", verbose_name="Module Name")
     banner = models.ForeignKey("students.RecommendedCourse", on_delete=models.SET_NULL, null=True, blank=True, related_name="modules", verbose_name="Promotional Banner")
     teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True, related_name="course_modules", verbose_name="Teacher")
-    availability_date_range = models.CharField(max_length=255, blank=True, null=True, verbose_name="Availability Date Range")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -366,11 +367,32 @@ class CourseModule(models.Model):
 class CourseModuleSession(models.Model):
     course_module = models.ForeignKey(CourseModule, on_delete=models.CASCADE, related_name="sessions")
     session_name = models.CharField(max_length=255, blank=True, null=True, verbose_name="Session Name")
+    availability_date_range = models.CharField(max_length=255, blank=True, null=True, verbose_name="Availability Date Range")
     
     class Meta:
         ordering = ["id"]
         verbose_name = "Session"
         verbose_name_plural = "Module Sessions"
+        unique_together = ("course_module", "availability_date_range")
+
+    def clean(self):
+        super().clean()
+        if self.availability_date_range and getattr(self, 'course_module_id', None) is not None:
+            qs = CourseModuleSession.objects.filter(
+                course_module=self.course_module,
+                availability_date_range=self.availability_date_range
+            )
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            if qs.exists():
+                from django.core.exceptions import ValidationError
+                raise ValidationError({
+                    "availability_date_range": "This availability date range has already been selected for another session in this module."
+                })
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.session_name or 'Session'}"

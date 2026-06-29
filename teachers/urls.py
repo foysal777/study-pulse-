@@ -22,4 +22,6 @@ urlpatterns = [
     path("dashboard/", views.teacher_dashboard, name="teacher_dashboard"),
     path("students/<int:student_id>/progress/", views.teacher_student_progress, name="teacher_student_progress"),
     path("assessments/<int:attempt_id>/result/", views.teacher_student_assessment_result, name="teacher_student_assessment_result"),
+    path("course-sessions/<int:course_id>/", views.get_course_sessions, name="get_course_sessions"),
+    path("sessions/<int:session_id>/dates/<int:teacher_id>/", views.get_session_dates, name="get_session_dates"),
 ]

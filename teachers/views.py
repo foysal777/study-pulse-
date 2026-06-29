@@ -415,6 +415,30 @@ def student_book_slot(request):
                 slot=slot_instance
             )
             
+            # 5. Send notifications
+            from teachers.tasks import send_class_reminder_push_notification, send_teacher_booking_email
+            from django.utils import timezone
+            
+            try:
+                teacher_email = slot_instance.teacher.user.email
+                student_name = request.user.full_name
+                slot_date_str = date.strftime("%Y-%m-%d")
+                slot_time_str = start_time.strftime("%I:%M %p")
+                send_teacher_booking_email.delay(teacher_email, student_name, slot_date_str, slot_time_str)
+            except Exception as e:
+                print(f"Failed to queue teacher email: {str(e)}")
+
+            try:
+                session_start = timezone.make_aware(datetime.combine(date, start_time))
+                notification_time = session_start - timedelta(minutes=30)
+                
+                if timezone.now() < notification_time:
+                    send_class_reminder_push_notification.apply_async(args=[request.user.id, slot_instance.id], eta=notification_time)
+                elif timezone.now() < session_start:
+                    send_class_reminder_push_notification.delay(request.user.id, slot_instance.id)
+            except Exception as e:
+                print(f"Failed to queue push notification: {str(e)}")
+            
             res_serializer = StudentBookingSerializer(booking)
             return success_response(res_serializer.data, message="Slot booked successfully.", status_code=status.HTTP_201_CREATED)
 
@@ -1032,4 +1056,112 @@ def teacher_student_assessment_result(request, attempt_id):
     }
 
     return success_response(result, message="Assessment result fetched successfully.")
+
+
+@extend_schema(
+    methods=["GET"],
+    tags=["Teachers Sessions"],
+    operation_id="course_sessions_list",
+    responses={200: OpenApiResponse(description="List of sessions for a course module.")},
+    description="Fetch all sessions (session name and availability date range) for a given course module ID or banner ID.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_course_sessions(request, course_id):
+    from teachers.models import CourseModuleSession, TeacherProfile
+    from django.db.models import Q
+    
+    sessions = CourseModuleSession.objects.filter(
+        Q(course_module_id=course_id) | Q(course_module__banner_id=course_id)
+    ).select_related("course_module__teacher").distinct()
+    
+    teacher_emails = [s.course_module.teacher.email for s in sessions if s.course_module and s.course_module.teacher]
+    profiles = TeacherProfile.objects.filter(user__email__in=teacher_emails).select_related('user')
+    email_to_profile_id = {p.user.email: p.id for p in profiles}
+    
+    data = []
+    for s in sessions:
+        t_id = None
+        if s.course_module and s.course_module.teacher:
+            t_id = email_to_profile_id.get(s.course_module.teacher.email)
+            
+        data.append({
+            "id": s.id,
+            "session_name": s.session_name,
+            "availability_date_range": s.availability_date_range,
+            "teacher_id": t_id
+        })
+    
+    return success_response(data, message="Sessions fetched successfully.")
+
+
+@extend_schema(
+    methods=["GET"],
+    tags=["Teachers Sessions"],
+    operation_id="session_dates_list",
+    responses={200: OpenApiResponse(description="List of dates and times for a session.")},
+    description="Fetch available dates and times for a specific session.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_session_dates(request, session_id, teacher_id):
+    from teachers.models import CourseModuleSession, TeacherProfile
+    from datetime import datetime, timedelta
+
+    try:
+        session = CourseModuleSession.objects.select_related("course_module__teacher").get(id=session_id)
+    except CourseModuleSession.DoesNotExist:
+        return error_response("Session not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+    if not session.availability_date_range:
+        return success_response([], message="No date range available for this session.")
+
+    # Try to parse date range assuming "YYYY-MM-DD to YYYY-MM-DD"
+    try:
+        parts = session.availability_date_range.split("to")
+        if len(parts) == 2:
+            start_date = datetime.strptime(parts[0].strip(), "%Y-%m-%d").date()
+            end_date = datetime.strptime(parts[1].strip(), "%Y-%m-%d").date()
+        else:
+            return error_response("Invalid date range format. Expected 'YYYY-MM-DD to YYYY-MM-DD'.", status_code=status.HTTP_400_BAD_REQUEST)
+    except ValueError:
+        return error_response("Invalid date range format. Expected 'YYYY-MM-DD to YYYY-MM-DD'.", status_code=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        profile = TeacherProfile.objects.get(id=teacher_id)
+    except TeacherProfile.DoesNotExist:
+        return error_response("Teacher profile not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+    availabilities = profile.availabilities.all()
+    # Group availabilities by day of week
+    avail_by_day = {}
+    for avail in availabilities:
+        day_name = avail.day_of_week
+        if day_name not in avail_by_day:
+            avail_by_day[day_name] = []
+        avail_by_day[day_name].append({
+            "start_time": avail.start_time,
+            "end_time": avail.end_time,
+            "mode": avail.mode
+        })
+
+    data = []
+    current_date = start_date
+    while current_date <= end_date:
+        day_name = current_date.strftime("%A")
+        if day_name in avail_by_day:
+            data.append({
+                "date": current_date,
+                "day_of_week": day_name,
+                "times": avail_by_day[day_name]
+            })
+        current_date += timedelta(days=1)
+        
+    response_data = {
+        "teacher_id": profile.id,
+        "teacher_name": profile.name,
+        "dates": data
+    }
+
+    return success_response(response_data, message="Session dates fetched successfully.")
 

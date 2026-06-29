@@ -132,6 +132,30 @@ class RecommendedCourse(models.Model):
         return self.course_name
 
 
+class CourseEnrollment(models.Model):
+    student = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="course_enrollments",
+        limit_choices_to={"role": "student"},
+    )
+    course = models.ForeignKey(
+        RecommendedCourse,
+        on_delete=models.CASCADE,
+        related_name="enrollments"
+    )
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-enrolled_at"]
+        unique_together = ("student", "course")
+        verbose_name = "Course Enrollment"
+        verbose_name_plural = "Course Enrollments"
+
+    def __str__(self):
+        return f"{self.student.full_name} enrolled in {self.course.course_name}"
+
+
 class StudentLocation(models.Model):
     student = models.OneToOneField(
         "accounts.User",

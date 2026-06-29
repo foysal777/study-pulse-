@@ -1,5 +1,6 @@
+from datetime import timedelta
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Avg
 from django.utils import timezone
 from decimal import Decimal, ROUND_HALF_UP
 from drf_spectacular.utils import OpenApiResponse, extend_schema, OpenApiParameter
@@ -15,7 +16,8 @@ from students.models import (
     Intterest, InterestSummary, StudentProfile, StudentLocation, AssessmentTemplate,
     AssessmentQuestion, AssessmentOption,
     StudentAssessmentAttempt, StudentAssessmentAnswer,
-    AssessmentAttemptStatus, AssessmentLevelBand, RecommendedCourse
+    AssessmentAttemptStatus, AssessmentLevelBand, RecommendedCourse,
+    CourseEnrollment
 )
 from teachers.models import (
     StudentBooking, TeacherSlot
@@ -44,6 +46,7 @@ from students.serializers import (
     RandomQuizQuestionSerializer,
     RandomQuizSubmitResponseSerializer,
     RandomQuizScoresListResponseSerializer,
+    RandomQuizStatsSuccessResponseSerializer,
 )
 from teachers.models import StudentBooking, GeneralInfo
 from students.models import StudentNotification
@@ -681,6 +684,39 @@ def get_recommended_course(request):
             recommended_name = "Elementary"
         else:
             recommended_name = "Pre-Intermediate"
+    elif "random quiz" in template_name:
+        achieved_pct = {
+            "reading_score": latest_attempt.reading_score or Decimal("0"),
+            "listening_score": latest_attempt.listening_score or Decimal("0"),
+            "writing_score": latest_attempt.writing_score or Decimal("0"),
+            "grammar_score": latest_attempt.grammar_score or Decimal("0"),
+        }
+        score_fields = ["reading_score", "listening_score", "writing_score", "grammar_score"]
+        templates_sorted = sorted(list(AssessmentTemplate.objects.filter(is_active=True).exclude(name__icontains="Random")), key=lambda x: x.id)
+        suggested_level = "Elementary"
+        for i, t in enumerate(templates_sorted):
+            if i < len(score_fields):
+                drawn_count = latest_attempt.answers.filter(question__section__template=t).count() or 5
+                earned = achieved_pct[score_fields[i]]
+                pct = earned / Decimal(drawn_count) if drawn_count > 0 else 0
+                if pct < 0.60:
+                    suggested_level = t.name
+                    break
+        else:
+            if templates_sorted:
+                suggested_level = templates_sorted[-1].name
+        
+        sl_lower = suggested_level.lower()
+        if "upper-intermediate" in sl_lower or "upper intermediate" in sl_lower:
+            recommended_name = "Upper-Intermediate"
+        elif "pre-intermediate" in sl_lower or "pre intermediate" in sl_lower:
+            recommended_name = "Pre-Intermediate"
+        elif "intermediate" in sl_lower:
+            recommended_name = "Intermediate"
+        elif "elementary" in sl_lower:
+            recommended_name = "Elementary"
+        else:
+            recommended_name = "Starter"
 
     if not recommended_name:
         return error_response(
@@ -698,8 +734,40 @@ def get_recommended_course(request):
         )
 
     serializer = RecommendedCourseDataSerializer(course, context={"request": request})
+    data = dict(serializer.data)
+    
+    is_enrolled = CourseEnrollment.objects.filter(student=request.user, course=course).exists()
+    data["is_enrolled"] = is_enrolled
+    
+    if is_enrolled:
+        from teachers.models import CourseModuleSession, TeacherProfile
+        from django.db.models import Q
+        
+        sessions = CourseModuleSession.objects.filter(
+            Q(course_module__banner=course)
+        ).select_related("course_module__teacher").distinct()
+        
+        teacher_emails = [s.course_module.teacher.email for s in sessions if s.course_module and s.course_module.teacher]
+        profiles = TeacherProfile.objects.filter(user__email__in=teacher_emails).select_related('user')
+        email_to_profile_id = {p.user.email: p.id for p in profiles}
+        
+        session_data = []
+        for s in sessions:
+            t_id = None
+            if s.course_module and s.course_module.teacher:
+                t_id = email_to_profile_id.get(s.course_module.teacher.email)
+                
+            session_data.append({
+                "id": s.id,
+                "session_name": s.session_name,
+                "availability_date_range": s.availability_date_range,
+                "teacher_id": t_id
+            })
+            
+        data["sessions"] = session_data
+
     return success_response(
-        serializer.data,
+        data,
         message=f"Recommended course for {recommended_name} retrieved successfully."
     )
 
@@ -755,6 +823,39 @@ def get_general_info(request):
                 recommended_name = "Elementary"
             else:
                 recommended_name = "Pre-Intermediate"
+        elif "random quiz" in template_name:
+            achieved_pct = {
+                "reading_score": latest_attempt.reading_score or Decimal("0"),
+                "listening_score": latest_attempt.listening_score or Decimal("0"),
+                "writing_score": latest_attempt.writing_score or Decimal("0"),
+                "grammar_score": latest_attempt.grammar_score or Decimal("0"),
+            }
+            score_fields = ["reading_score", "listening_score", "writing_score", "grammar_score"]
+            templates_sorted = sorted(list(AssessmentTemplate.objects.filter(is_active=True).exclude(name__icontains="Random")), key=lambda x: x.id)
+            suggested_level = "Elementary"
+            for i, t in enumerate(templates_sorted):
+                if i < len(score_fields):
+                    drawn_count = latest_attempt.answers.filter(question__section__template=t).count() or 5
+                    earned = achieved_pct[score_fields[i]]
+                    pct = earned / Decimal(drawn_count) if drawn_count > 0 else 0
+                    if pct < 0.60:
+                        suggested_level = t.name
+                        break
+            else:
+                if templates_sorted:
+                    suggested_level = templates_sorted[-1].name
+            
+            sl_lower = suggested_level.lower()
+            if "upper-intermediate" in sl_lower or "upper intermediate" in sl_lower:
+                recommended_name = "Upper-Intermediate"
+            elif "pre-intermediate" in sl_lower or "pre intermediate" in sl_lower:
+                recommended_name = "Pre-Intermediate"
+            elif "intermediate" in sl_lower:
+                recommended_name = "Intermediate"
+            elif "elementary" in sl_lower:
+                recommended_name = "Elementary"
+            else:
+                recommended_name = "Starter"
 
         if recommended_name:
             info_obj = general_info.filter(calender_type__icontains=recommended_name).first()
@@ -1258,4 +1359,221 @@ def student_quiz_scores(request):
 
     return success_response(scores_list, message="Student quiz scores retrieved successfully.")
 
+
+@extend_schema(
+    tags=["Students Assessment"],
+    operation_id="students_quiz_stats",
+    responses={200: RandomQuizStatsSuccessResponseSerializer},
+    description="Retrieve average score for the last 7 days and how much it increased or decreased compared to the previous 7 days.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def student_quiz_stats(request):
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Only student users can access this endpoint.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    end_date = timezone.now()
+    start_date_last_7 = end_date - timedelta(days=7)
+    start_date_previous_7 = start_date_last_7 - timedelta(days=7)
+
+    last_7_attempts = StudentAssessmentAttempt.objects.filter(
+        student=request.user,
+        template__name="Random Quiz",
+        status=AssessmentAttemptStatus.EVALUATED,
+        evaluated_at__gte=start_date_last_7,
+        evaluated_at__lte=end_date
+    )
+
+    prev_7_attempts = StudentAssessmentAttempt.objects.filter(
+        student=request.user,
+        template__name="Random Quiz",
+        status=AssessmentAttemptStatus.EVALUATED,
+        evaluated_at__gte=start_date_previous_7,
+        evaluated_at__lt=start_date_last_7
+    )
+
+    last_7_avg = last_7_attempts.aggregate(Avg("total_score"))["total_score__avg"] or Decimal("0")
+    prev_7_avg = prev_7_attempts.aggregate(Avg("total_score"))["total_score__avg"] or Decimal("0")
+
+    last_7_avg = Decimal(last_7_avg).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    prev_7_avg = Decimal(prev_7_avg).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    last_7_avg_pct = (last_7_avg * Decimal("100") / Decimal("20")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    prev_7_avg_pct = (prev_7_avg * Decimal("100") / Decimal("20")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    score_difference = last_7_avg - prev_7_avg
+    score_difference_pct = last_7_avg_pct - prev_7_avg_pct
+
+    change_type = "no_change"
+    if score_difference > 0:
+        change_type = "increase"
+    elif score_difference < 0:
+        change_type = "decrease"
+
+    payload = {
+        "average_score": last_7_avg,
+        "average_score_percentage": last_7_avg_pct,
+        "score_difference": abs(score_difference),
+        "score_difference_percentage": abs(score_difference_pct),
+        "change_type": change_type,
+    }
+
+    return success_response(payload, message="Student quiz stats retrieved successfully.")
+
+
+@extend_schema(
+    tags=["Students Course"],
+    operation_id="students_course_enrollment_status",
+    responses={
+        200: OpenApiResponse(description="Enrollment status retrieved successfully."),
+    },
+    description="Check if the authenticated student is enrolled in a specific course.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def check_course_enrollment(request, course_id):
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Only student users can access this endpoint.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    is_enrolled = CourseEnrollment.objects.filter(student=request.user, course_id=course_id).exists()
+    
+    payload = {"is_enrolled": is_enrolled}
+    
+    if is_enrolled:
+        from teachers.models import CourseModuleSession, TeacherProfile
+        from django.db.models import Q
+        
+        sessions = CourseModuleSession.objects.filter(
+            Q(course_module__banner_id=course_id) | Q(course_module_id=course_id)
+        ).select_related("course_module__teacher").distinct()
+        
+        teacher_emails = [s.course_module.teacher.email for s in sessions if s.course_module and s.course_module.teacher]
+        profiles = TeacherProfile.objects.filter(user__email__in=teacher_emails).select_related('user')
+        email_to_profile_id = {p.user.email: p.id for p in profiles}
+        
+        session_data = []
+        for s in sessions:
+            t_id = None
+            if s.course_module and s.course_module.teacher:
+                t_id = email_to_profile_id.get(s.course_module.teacher.email)
+                
+            session_data.append({
+                "id": s.id,
+                "session_name": s.session_name,
+                "availability_date_range": s.availability_date_range,
+                "teacher_id": t_id
+            })
+            
+        payload["sessions"] = session_data
+
+    return success_response(
+        payload,
+        message="Enrollment status retrieved successfully."
+    )
+
+
+@extend_schema(
+    tags=["Students Course"],
+    operation_id="students_enroll_in_course",
+    responses={
+        200: OpenApiResponse(description="Course enrollment successful or already enrolled."),
+    },
+    description="Enroll the authenticated student in a specific course.",
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def enroll_in_course(request, course_id):
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Only student users can access this endpoint.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    try:
+        course = RecommendedCourse.objects.get(id=course_id)
+    except RecommendedCourse.DoesNotExist:
+        return error_response("Course not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+    enrollment, created = CourseEnrollment.objects.get_or_create(student=request.user, course=course)
+
+    if not created:
+        return success_response(
+            {"is_enrolled": True},
+            message="Already enrolled in this course."
+        )
+
+    return success_response(
+        {"is_enrolled": True},
+        message="Successfully enrolled in the course."
+    )
+
+
+@extend_schema(
+    tags=["Students Course"],
+    operation_id="students_enrolled_courses",
+    responses={
+        200: OpenApiResponse(description="Enrolled courses retrieved successfully."),
+    },
+    description="Get a list of all courses the student is enrolled in, including session details.",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_enrolled_courses(request):
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Only student users can access this endpoint.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    enrollments = CourseEnrollment.objects.filter(student=request.user).select_related("course").order_by("-enrolled_at")
+    
+    from teachers.models import CourseModuleSession, TeacherProfile
+    from django.db.models import Q
+    
+    response_data = []
+    
+    for enrollment in enrollments:
+        course = enrollment.course
+        course_data = {
+            "id": course.id,
+            "course_name": course.course_name,
+            "banner": request.build_absolute_uri(course.banner.url) if course.banner else None,
+            "enrolled_at": enrollment.enrolled_at.isoformat(),
+            "sessions": []
+        }
+        
+        sessions = CourseModuleSession.objects.filter(
+            Q(course_module__banner=course)
+        ).select_related("course_module__teacher").distinct()
+        
+        teacher_emails = [s.course_module.teacher.email for s in sessions if s.course_module and s.course_module.teacher]
+        profiles = TeacherProfile.objects.filter(user__email__in=teacher_emails).select_related('user')
+        email_to_profile_id = {p.user.email: p.id for p in profiles}
+        
+        session_data = []
+        for s in sessions:
+            t_id = None
+            if s.course_module and s.course_module.teacher:
+                t_id = email_to_profile_id.get(s.course_module.teacher.email)
+                
+            session_data.append({
+                "id": s.id,
+                "session_name": s.session_name,
+                "availability_date_range": s.availability_date_range,
+                "teacher_id": t_id
+            })
+            
+        course_data["sessions"] = session_data
+        response_data.append(course_data)
+
+    return success_response(
+        response_data,
+        message="Enrolled courses retrieved successfully."
+    )
 

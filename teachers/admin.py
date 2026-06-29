@@ -955,11 +955,23 @@ class StudentBookingAdmin(ModelAdmin):
     autocomplete_fields = ("slot",)
 
 
+class CourseModuleSessionForm(forms.ModelForm):
+    availability_date_range = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": "Select Date Range (Start to End)", "class": "session-date-range"}),
+        label="Availability Date Range",
+    )
+
+    class Meta:
+        model = CourseModuleSession
+        fields = "__all__"
+
 class CourseModuleSessionInline(admin.TabularInline):
     model = CourseModuleSession
+    form = CourseModuleSessionForm
     extra = 6
     max_num = 6
-    fields = ("session_name",)
+    fields = ("session_name", "availability_date_range")
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         formfield = super().formfield_for_foreignkey(db_field, request, **kwargs)
@@ -972,12 +984,6 @@ class CourseModuleSessionInline(admin.TabularInline):
 
 
 class CourseModuleForm(forms.ModelForm):
-    availability_date_range = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={"placeholder": "Select Date Range (e.g. YYYY-MM-DD to YYYY-MM-DD)"}),
-        label="Availability Date Range",
-    )
-
     class Meta:
         model = CourseModule
         fields = "__all__"
@@ -1008,6 +1014,17 @@ class CourseModuleAdmin(ModelAdmin):
         return formfield
 
 # Auto-run migrations to avoid user error
+import sys
+if 'runserver' in sys.argv:
+    from django.core.management import call_command
+    import threading
+    def run_migrations():
+        try:
+            call_command('makemigrations', 'teachers')
+            call_command('migrate', 'teachers')
+        except Exception:
+            pass
+    threading.Thread(target=run_migrations).start()# Auto-run migrations to avoid user error
 import sys
 if 'runserver' in sys.argv:
     from django.core.management import call_command
