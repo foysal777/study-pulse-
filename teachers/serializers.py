@@ -89,10 +89,12 @@ class StudentBookingSerializer(serializers.ModelSerializer):
     start_time = serializers.TimeField(write_only=True)
     mode = serializers.ChoiceField(choices=SlotMode.choices, write_only=True)
     offline_location = serializers.CharField(required=False, allow_null=True, write_only=True)
+    session_id = serializers.IntegerField(required=False, allow_null=True, write_only=True)
+    course_id = serializers.IntegerField(required=False, allow_null=True, write_only=True)
 
     class Meta:
         model = StudentBooking
-        fields = ["id", "student", "slot", "booked_at", "date", "start_time", "mode", "offline_location"]
+        fields = ["id", "student", "slot", "session_id", "course_id", "booked_at", "date", "start_time", "mode", "offline_location"]
         read_only_fields = ["id", "student", "slot", "booked_at"]
 
 
@@ -125,8 +127,7 @@ class TeacherBookedSlotSerializer(serializers.ModelSerializer):
         avail = TeacherAvailability.objects.filter(
             teacher=obj.teacher,
             day_of_week=day_of_week,
-            start_time=obj.start_time,
-            mode=obj.mode
+            start_time=obj.start_time
         ).first()
         return avail.id if avail else None
 

@@ -971,7 +971,7 @@ class CourseModuleSessionInline(admin.TabularInline):
     form = CourseModuleSessionForm
     extra = 6
     max_num = 6
-    fields = ("session_name", "availability_date_range")
+    fields = ("session_name", "availability_date_range", "is_online", "offline_location")
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         formfield = super().formfield_for_foreignkey(db_field, request, **kwargs)

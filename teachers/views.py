@@ -240,6 +240,7 @@ def teacher_availability(request):
     parameters=[
         OpenApiParameter(name="date", description="Date in YYYY-MM-DD format", required=True, type=OpenApiTypes.DATE),
         OpenApiParameter(name="mode", description="Filter by mode: online or offline", required=False, type=OpenApiTypes.STR),
+        OpenApiParameter(name="session_id", description="Filter by session ID to get slots for the specific teacher", required=False, type=OpenApiTypes.INT),
     ],
     description="Fetch available slots for students. Query params: date (YYYY-MM-DD), mode (online/offline).",
 )
@@ -263,7 +264,22 @@ def student_available_slots(request):
     ).exclude(
         withdrawal_requests__status__in=[RequestStatus.PENDING, RequestStatus.APPROVED]
     ).select_related("teacher").distinct()
-    if mode:
+    
+    session_id = request.query_params.get("session_id")
+    if session_id:
+        from teachers.models import CourseModuleSession
+        try:
+            session_instance = CourseModuleSession.objects.select_related("course_module__teacher").get(id=session_id)
+            teacher = session_instance.course_module.teacher
+            if teacher:
+                availabilities = availabilities.filter(teacher__user__email=teacher.email)
+            # Also override mode based on session if we want to show exact availability?
+            # But the student is checking available times for the session, so we don't need to enforce mode here
+            # since the session dictates the mode. We just want to know if the teacher is free.
+        except CourseModuleSession.DoesNotExist:
+            pass
+
+    if mode and not session_id:
         availabilities = availabilities.filter(mode=mode)
 
     # Group by time, mode and location
@@ -326,6 +342,8 @@ def student_book_slot(request):
     start_time = serializer.validated_data["start_time"]
     mode = serializer.validated_data["mode"]
     offline_location = serializer.validated_data.get("offline_location")
+    session_id = serializer.validated_data.get("session_id")
+    course_id = serializer.validated_data.get("course_id")
     day_name = date.strftime("%A")
 
     # Check if the student already has a booking on this date and start_time
@@ -343,44 +361,70 @@ def student_book_slot(request):
 
     try:
         with transaction.atomic():
-            # 1. Find all teachers available at this time/mode/location
-            avail_filters = {
-                "day_of_week": day_name,
-                "start_time": start_time,
-                "mode": mode
-            }
-            if mode == SlotMode.OFFLINE and offline_location:
-                avail_filters["teacher__offline_location"] = offline_location
-
-            available_teachers = TeacherAvailability.objects.filter(
-                **avail_filters
-            ).exclude(
-                withdrawal_requests__status__in=[RequestStatus.PENDING, RequestStatus.APPROVED]
-            ).values_list("teacher_id", flat=True).distinct()
-
-            if not available_teachers:
-                return error_response("No teachers available for this slot.", status_code=status.HTTP_404_NOT_FOUND)
-
-            # 2. Find/Pick the least booked teacher
-            # We need to look at TeacherSlot for this date
-            # Optimization: Get all existing slots for these teachers on this date
-            existing_slots = TeacherSlot.objects.select_for_update().filter(
-                teacher_id__in=available_teachers,
-                date=date,
-                start_time=start_time,
-                mode=mode
-            )
-
-            slots_by_teacher = {s.teacher_id: s for s in existing_slots}
-            
+            session_instance = None
             chosen_teacher_id = None
-            min_booked = 41 # max is 40
 
-            for t_id in available_teachers:
-                booked = slots_by_teacher[t_id].booked_students if t_id in slots_by_teacher else 0
-                if booked < 40 and booked < min_booked:
-                    min_booked = booked
-                    chosen_teacher_id = t_id
+            if session_id:
+                # ── SESSION-BASED BOOKING ─────────────────────────────────────────
+                # session_id থাকলে availability check করার দরকার নেই।
+                # Session এ already teacher assigned আছে, তাকেই book করবো।
+                # ─────────────────────────────────────────────────────────────────
+                from teachers.models import CourseModuleSession
+                try:
+                    session_instance = CourseModuleSession.objects.select_related("course_module__teacher").get(id=session_id)
+                except CourseModuleSession.DoesNotExist:
+                    return error_response("Session not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+                teacher = session_instance.course_module.teacher
+                if not teacher:
+                    return error_response("No teacher assigned to this session.", status_code=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    teacher_profile = TeacherProfile.objects.get(user__email=teacher.email)
+                    chosen_teacher_id = teacher_profile.id
+                except TeacherProfile.DoesNotExist:
+                    return error_response("Teacher profile not found for this session.", status_code=status.HTTP_404_NOT_FOUND)
+
+                # Session এর নিজস্ব mode ও location override করো
+                mode = SlotMode.ONLINE if session_instance.is_online else SlotMode.OFFLINE
+                offline_location = session_instance.offline_location
+                if not session_instance.is_online and not offline_location:
+                    offline_location = teacher_profile.offline_location
+
+            else:
+                # ── NORMAL AVAILABILITY-BASED BOOKING ────────────────────────────
+                avail_filters = {
+                    "day_of_week": day_name,
+                    "start_time": start_time,
+                    "mode": mode
+                }
+                if mode == SlotMode.OFFLINE and offline_location:
+                    avail_filters["teacher__offline_location"] = offline_location
+
+                available_teachers = TeacherAvailability.objects.filter(
+                    **avail_filters
+                ).exclude(
+                    withdrawal_requests__status__in=[RequestStatus.PENDING, RequestStatus.APPROVED]
+                ).values_list("teacher_id", flat=True).distinct()
+
+                if not available_teachers:
+                    return error_response("No teachers available for this slot.", status_code=status.HTTP_404_NOT_FOUND)
+
+                # Least-booked teacher বাছাই করো
+                existing_slots = TeacherSlot.objects.select_for_update().filter(
+                    teacher_id__in=available_teachers,
+                    date=date,
+                    start_time=start_time,
+                    mode=mode
+                )
+                slots_by_teacher = {s.teacher_id: s for s in existing_slots}
+                min_booked = 41
+
+                for t_id in available_teachers:
+                    booked = slots_by_teacher[t_id].booked_students if t_id in slots_by_teacher else 0
+                    if booked < 40 and booked < min_booked:
+                        min_booked = booked
+                        chosen_teacher_id = t_id
 
             if chosen_teacher_id is None:
                 return error_response("All slots are full for this time.", status_code=status.HTTP_400_BAD_REQUEST)
@@ -398,8 +442,11 @@ def student_book_slot(request):
             # If created, end_time logic above is a bit messy, let's fix it.
             if created:
                 # Find end_time from availability
-                avail = TeacherAvailability.objects.get(teacher_id=chosen_teacher_id, day_of_week=day_name, start_time=start_time, mode=mode)
-                slot_instance.end_time = avail.end_time
+                avail = TeacherAvailability.objects.filter(teacher_id=chosen_teacher_id, day_of_week=day_name, start_time=start_time).first()
+                if avail:
+                    slot_instance.end_time = avail.end_time
+                else:
+                    slot_instance.end_time = (datetime.combine(date, start_time) + timedelta(hours=1)).time()
                 slot_instance.save()
 
             if slot_instance.booked_students >= slot_instance.max_students:
@@ -410,34 +457,47 @@ def student_book_slot(request):
             slot_instance.refresh_from_db()
 
             # 4. Create Booking
+            course_instance = None
+            if course_id:
+                from students.models import RecommendedCourse
+                try:
+                    course_instance = RecommendedCourse.objects.get(id=course_id)
+                except RecommendedCourse.DoesNotExist:
+                    pass
+
             booking = StudentBooking.objects.create(
                 student=request.user,
-                slot=slot_instance
+                slot=slot_instance,
+                session=session_instance,
+                course=course_instance
             )
             
-            # 5. Send notifications
-            from teachers.tasks import send_class_reminder_push_notification, send_teacher_booking_email
-            from django.utils import timezone
-            
+            # 5. Send notifications (optional - celery নাও থাকতে পারে)
             try:
-                teacher_email = slot_instance.teacher.user.email
-                student_name = request.user.full_name
-                slot_date_str = date.strftime("%Y-%m-%d")
-                slot_time_str = start_time.strftime("%I:%M %p")
-                send_teacher_booking_email.delay(teacher_email, student_name, slot_date_str, slot_time_str)
-            except Exception as e:
-                print(f"Failed to queue teacher email: {str(e)}")
+                from teachers.tasks import send_class_reminder_push_notification, send_teacher_booking_email
+                from django.utils import timezone as tz
 
-            try:
-                session_start = timezone.make_aware(datetime.combine(date, start_time))
-                notification_time = session_start - timedelta(minutes=30)
-                
-                if timezone.now() < notification_time:
-                    send_class_reminder_push_notification.apply_async(args=[request.user.id, slot_instance.id], eta=notification_time)
-                elif timezone.now() < session_start:
-                    send_class_reminder_push_notification.delay(request.user.id, slot_instance.id)
-            except Exception as e:
-                print(f"Failed to queue push notification: {str(e)}")
+                try:
+                    teacher_email = slot_instance.teacher.user.email
+                    student_name = request.user.full_name
+                    slot_date_str = date.strftime("%Y-%m-%d")
+                    slot_time_str = start_time.strftime("%I:%M %p")
+                    send_teacher_booking_email.delay(teacher_email, student_name, slot_date_str, slot_time_str)
+                except Exception as e:
+                    print(f"Failed to queue teacher email: {str(e)}")
+
+                try:
+                    session_start = tz.make_aware(datetime.combine(date, start_time))
+                    notification_time = session_start - timedelta(minutes=30)
+                    if tz.now() < notification_time:
+                        send_class_reminder_push_notification.apply_async(args=[request.user.id, slot_instance.id], eta=notification_time)
+                    elif tz.now() < session_start:
+                        send_class_reminder_push_notification.delay(request.user.id, slot_instance.id)
+                except Exception as e:
+                    print(f"Failed to queue push notification: {str(e)}")
+
+            except ImportError:
+                print("Celery not available, skipping notifications.")
             
             res_serializer = StudentBookingSerializer(booking)
             return success_response(res_serializer.data, message="Slot booked successfully.", status_code=status.HTTP_201_CREATED)

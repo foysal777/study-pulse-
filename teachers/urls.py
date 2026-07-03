@@ -25,3 +25,6 @@ urlpatterns = [
     path("course-sessions/<int:course_id>/", views.get_course_sessions, name="get_course_sessions"),
     path("sessions/<int:session_id>/dates/<int:teacher_id>/", views.get_session_dates, name="get_session_dates"),
 ]
+
+
+

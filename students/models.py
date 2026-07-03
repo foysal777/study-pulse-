@@ -144,6 +144,7 @@ class CourseEnrollment(models.Model):
         on_delete=models.CASCADE,
         related_name="enrollments"
     )
+    is_confirm = models.BooleanField(default=False)
     enrolled_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

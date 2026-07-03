@@ -324,6 +324,18 @@ class StudentBooking(models.Model):
         on_delete=models.CASCADE,
         related_name="bookings"
     )
+    session = models.ForeignKey(
+        'CourseModuleSession',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="bookings"
+    )
+    course = models.ForeignKey(
+        'students.RecommendedCourse',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="student_bookings"
+    )
     booked_at = models.DateTimeField(auto_now_add=True)
     marks = models.PositiveIntegerField(null=True, blank=True)
     feedback = models.TextField(null=True, blank=True)
@@ -368,6 +380,8 @@ class CourseModuleSession(models.Model):
     course_module = models.ForeignKey(CourseModule, on_delete=models.CASCADE, related_name="sessions")
     session_name = models.CharField(max_length=255, blank=True, null=True, verbose_name="Session Name")
     availability_date_range = models.CharField(max_length=255, blank=True, null=True, verbose_name="Availability Date Range")
+    is_online = models.BooleanField(default=True)
+    offline_location = models.TextField(blank=True, null=True)
     
     class Meta:
         ordering = ["id"]

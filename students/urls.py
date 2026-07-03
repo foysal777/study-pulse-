@@ -20,6 +20,7 @@ urlpatterns = [
     path("enrolled-courses/", views.get_enrolled_courses, name="get_enrolled_courses"),
     path("course/<int:course_id>/enroll/", views.enroll_in_course, name="enroll_in_course"),
     path("course/<int:course_id>/enrollment-status/", views.check_course_enrollment, name="check_course_enrollment"),
+    path("course/<int:course_id>/confirm-enrollment/", views.confirm_enrollment, name="confirm_enrollment"),
     path("general-info/", views.get_general_info, name="get_general_info"),
     path("notifications/", views.get_student_notifications, name="get_student_notifications"),
     path("cancel-booking/<int:booking_id>/", views.cancel_booking, name="cancel_booking"),

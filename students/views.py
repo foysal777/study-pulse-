@@ -52,6 +52,38 @@ from teachers.models import StudentBooking, GeneralInfo
 from students.models import StudentNotification
 
 
+def _serialize_session_data(session_obj, teacher_profile_id=None, extra_fields=None):
+    from datetime import datetime as dt
+    today = timezone.now().date()
+    
+    session_status = "active"
+    if session_obj.availability_date_range:
+        parts = session_obj.availability_date_range.split("to")
+        if len(parts) == 2:
+            try:
+                end_date = dt.strptime(parts[1].strip(), "%Y-%m-%d").date()
+                if end_date < today:
+                    session_status = "completed"
+            except ValueError:
+                pass
+                
+    data = {
+        "id": session_obj.id,
+        "session_name": session_obj.session_name,
+        "availability_date_range": session_obj.availability_date_range,
+        "teacher_id": teacher_profile_id,
+        "is_online": session_obj.is_online,
+        "status": session_status,
+    }
+    if not session_obj.is_online:
+        data["offline_location"] = session_obj.offline_location
+        
+    if extra_fields:
+        data.update(extra_fields)
+        
+    return data
+
+
 def _get_core_reasons_options():
     return list(
         InterestSummary.objects.order_by("interest_name")
@@ -757,12 +789,7 @@ def get_recommended_course(request):
             if s.course_module and s.course_module.teacher:
                 t_id = email_to_profile_id.get(s.course_module.teacher.email)
                 
-            session_data.append({
-                "id": s.id,
-                "session_name": s.session_name,
-                "availability_date_range": s.availability_date_range,
-                "teacher_id": t_id
-            })
+            session_data.append(_serialize_session_data(s, t_id))
             
         data["sessions"] = session_data
 
@@ -1463,12 +1490,7 @@ def check_course_enrollment(request, course_id):
             if s.course_module and s.course_module.teacher:
                 t_id = email_to_profile_id.get(s.course_module.teacher.email)
                 
-            session_data.append({
-                "id": s.id,
-                "session_name": s.session_name,
-                "availability_date_range": s.availability_date_range,
-                "teacher_id": t_id
-            })
+            session_data.append(_serialize_session_data(s, t_id))
             
         payload["sessions"] = session_data
 
@@ -1535,11 +1557,20 @@ def get_enrolled_courses(request):
     
     from teachers.models import CourseModuleSession, TeacherProfile
     from django.db.models import Q
+    from django.utils import timezone
+    import re
     
     response_data = []
+    today = timezone.now().date()
     
     for enrollment in enrollments:
         course = enrollment.course
+
+        # Get sessions for the course
+        sessions_qs = CourseModuleSession.objects.filter(
+            Q(course_module__banner=course)
+        ).select_related("course_module__teacher").distinct()
+
         course_data = {
             "id": course.id,
             "course_name": course.course_name,
@@ -1548,26 +1579,26 @@ def get_enrolled_courses(request):
             "sessions": []
         }
         
-        sessions = CourseModuleSession.objects.filter(
-            Q(course_module__banner=course)
-        ).select_related("course_module__teacher").distinct()
-        
-        teacher_emails = [s.course_module.teacher.email for s in sessions if s.course_module and s.course_module.teacher]
+        teacher_emails = [s.course_module.teacher.email for s in sessions_qs if s.course_module and s.course_module.teacher]
         profiles = TeacherProfile.objects.filter(user__email__in=teacher_emails).select_related('user')
         email_to_profile_id = {p.user.email: p.id for p in profiles}
+
+        # Get all session IDs for which this student has a confirmed booking
+        from teachers.models import StudentBooking
+        booked_session_ids = set(
+            StudentBooking.objects.filter(
+                student=request.user,
+                session__in=sessions_qs
+            ).values_list("session_id", flat=True)
+        )
         
         session_data = []
-        for s in sessions:
+        for s in sessions_qs:
             t_id = None
             if s.course_module and s.course_module.teacher:
                 t_id = email_to_profile_id.get(s.course_module.teacher.email)
                 
-            session_data.append({
-                "id": s.id,
-                "session_name": s.session_name,
-                "availability_date_range": s.availability_date_range,
-                "teacher_id": t_id
-            })
+            session_data.append(_serialize_session_data(s, t_id, extra_fields={"is_confirm": s.id in booked_session_ids}))
             
         course_data["sessions"] = session_data
         response_data.append(course_data)
@@ -1577,3 +1608,39 @@ def get_enrolled_courses(request):
         message="Enrolled courses retrieved successfully."
     )
 
+
+@extend_schema(
+    tags=["Students Course"],
+    operation_id="students_confirm_enrollment",
+    responses={
+        200: OpenApiResponse(description="Enrollment confirmed successfully."),
+    },
+    description="Confirm a student's enrollment in a specific course. Sets is_confirm to True.",
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def confirm_enrollment(request, course_id):
+    if request.user.role != UserRole.STUDENT:
+        return error_response(
+            "Only student users can access this endpoint.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    try:
+        enrollment = CourseEnrollment.objects.get(student=request.user, course_id=course_id)
+    except CourseEnrollment.DoesNotExist:
+        return error_response("Enrollment not found. Please enroll in the course first.", status_code=status.HTTP_404_NOT_FOUND)
+
+    if enrollment.is_confirm:
+        return success_response(
+            {"is_confirm": True},
+            message="Enrollment is already confirmed."
+        )
+
+    enrollment.is_confirm = True
+    enrollment.save()
+
+    return success_response(
+        {"is_confirm": True},
+        message="Enrollment confirmed successfully."
+    )
