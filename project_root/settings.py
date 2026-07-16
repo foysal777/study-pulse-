@@ -182,6 +182,11 @@ UNFOLD = {
                         "link": "/admin/teachers/sessionlist/",
                     },
                     {
+                        "title": "Course Modules",
+                        "icon": "view_module",
+                        "link": "/admin/teachers/coursemodule/",
+                    },
+                    {
                         "title": "General Info",
                         "icon": "info",
                         "link": "/admin/teachers/generalinfo/",
